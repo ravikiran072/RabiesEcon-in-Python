@@ -5,41 +5,18 @@ import seaborn as sns
 import time as tm
 
 
-coverage_data = pd.read_csv(
-    r"C:\Users\mfl3\OneDrive - CDC\Rabies\RabioesEcon-Python\data\parameter_values.csv"
-)
-
-
-# Load vaccination coverage parameters from CSV
-try:
-    coverage_data = pd.read_csv(
-        r"C:\Users\mfl3\OneDrive - CDC\Rabies\RabioesEcon-Python\data\parameter_values.csv"
-    )
-    print("Successfully loaded vaccination coverage data")
-    print(f"Coverage data shape: {coverage_data.shape}")
-    print("Coverage data preview:")
-    print(coverage_data.head())
-except Exception:
-    # Create default data as fallback
-    coverage_data = pd.DataFrame(
-        {
-            "year": range(1, 31),
-            "no_annual_vaccination_coverage": [0.10] * 30,
-            "annual_vaccination_coverage": [0.20] * 3
-            + [0.35] * 3
-            + [0.50] * 7
-            + [0.70] * 17,
-        }
-    )
-    print("Using default coverage data")
+os.chdir(r"C:\Users\mfl3\OneDrive - CDC\Rabies\RabioesEcon-Python")
+coverage_data = pd.read_csv("data\\coverage_data.csv")
+model_parameters = pd.read_excel("data\\model_parameters.xlsx")
 
 
 def get_vaccination_coverage(year, scenario="annual_vaccination"):
     """
     Get vaccination coverage for a specific year and scenario from CSV data
     """
-    # Cap year at available range
-    year = min(max(year, 1), 30)
+    # Cap year at maximum available in data
+    year = min(year, coverage_data["year"].max())
+    year = max(year, coverage_data["year"].min())
 
     # Get the row for this year
     coverage_row = coverage_data[coverage_data["year"] == year]
@@ -50,26 +27,48 @@ def get_vaccination_coverage(year, scenario="annual_vaccination"):
         else:  # annual_vaccination scenario
             return coverage_row["annual_vaccination_coverage"].iloc[0]
     else:
-        # Fallback values
+        # Fallback values if year not found
         return 0.10 if scenario == "no_annual_vaccination" else 0.50
 
 
 # Initial parameters
-Km2_of_program_area = 14000
-Human_population = 11172223
+Km2_of_program_area = model_parameters.query("Parameters == 'Km2_of_program_area'")[
+    "Values"
+].iloc[0]
+Human_population = model_parameters.query("Parameters == 'Human_population'")[
+    "Values"
+].iloc[0]
 Humans_per_km2 = Human_population / Km2_of_program_area
-Human_birth = 17.00
-Human_life_expectancy = 70
-Humans_per_free_roaming_dog = 15.0
+Human_birth = model_parameters.query("Parameters == 'Human_birth'")["Values"].iloc[0]
+Human_life_expectancy = model_parameters.query("Parameters == 'Human_life_expectancy'")[
+    "Values"
+].iloc[0]
+Humans_per_free_roaming_dog = model_parameters.query(
+    "Parameters == 'Humans_per_free_roaming_dog'"
+)["Values"].iloc[0]
 Free_roaming_dog_population = Human_population / Humans_per_free_roaming_dog
 Free_roaming_dogs_per_km2 = Free_roaming_dog_population / Km2_of_program_area
-Dog_birth_rate_per_1000_dogs = 750
-Dog_life_expectancy = 3.0
-R0_dog_to_dog = 1.7
-Annual_dog_bite_risk = 0.02
-Probability_of_rabies_in_biting_dogs = 0.02
-Probability_of_human_developing_rabies = 0.17
-Dog_Human_transmission_rate = 0.000016
+Dog_birth_rate_per_1000_dogs = model_parameters.query(
+    "Parameters == 'Dog_birth_rate_per_1000_dogs'"
+)["Values"].iloc[0]
+Dog_life_expectancy = model_parameters.query("Parameters == 'Dog_life_expectancy'")[
+    "Values"
+].iloc[0]
+R0_dog_to_dog = model_parameters.query("Parameters == 'R0_dog_to_dog'")["Values"].iloc[
+    0
+]
+Annual_dog_bite_risk = model_parameters.query("Parameters == 'Annual_dog_bite_risk'")[
+    "Values"
+].iloc[0]
+Probability_of_rabies_in_biting_dogs = model_parameters.query(
+    "Parameters == 'Probability_of_rabies_in_biting_dogs'"
+)["Values"].iloc[0]
+Probability_of_human_developing_rabies = model_parameters.query(
+    "Parameters == 'Probability_of_human_developing_rabies'"
+)["Values"].iloc[0]
+Dog_Human_transmission_rate = model_parameters.query(
+    "Parameters == 'Dog_Human_transmission_rate'"
+)["Values"].iloc[0]
 
 # Model parameters
 Program_Area = Km2_of_program_area  # (REQUIRES INPUT) Km2_of_program_area
@@ -195,11 +194,6 @@ initial_run = pd.DataFrame(results)
 # Add week column
 initial_run["week"] = initial_run["time"].apply(lambda x: 52 if x % 52 == 0 else x % 52)
 
-# Display results
-print("Head of initial_run:")
-print(initial_run.head())
-print("\nTail of initial_run:")
-print(initial_run.tail())
 
 # Create visualization (equivalent to ggplot)
 # Melt the dataframe for plotting
@@ -458,11 +452,6 @@ no_annual_vaccination["year"] = [1] + [
 # Calculate cumulative new exposures
 no_annual_vaccination["Cu_new_expo"] = no_annual_vaccination["new_expo"].cumsum()
 
-# Display results
-print("Head of no_annual_vaccination:")
-print(no_annual_vaccination.head())
-print("\nTail of no_annual_vaccination:")
-print(no_annual_vaccination.tail())
 
 # Create result summary by year
 result_no_annual_vaccination = pd.DataFrame(
@@ -514,11 +503,6 @@ result_no_annual_vaccination["canine_rabies_annual"] = [
 result_no_annual_vaccination["human_rabies_annual"] = [
     result_no_annual_vaccination["hum_rabies_cases_cumulative"].iloc[0]
 ] + list(np.diff(result_no_annual_vaccination["hum_rabies_cases_cumulative"]))
-
-print("\nHead of result_no_annual_vaccination:")
-print(result_no_annual_vaccination.head())
-print("\nTail of result_no_annual_vaccination:")
-print(result_no_annual_vaccination.tail())
 
 
 #### Annual Vaccination Plan ####
@@ -575,7 +559,7 @@ beta_dh = 0.000016  # Dog human transmission rate (Annual vaccination value)
 year = [1] + [year_val for year_val in range(1, 101) for _ in range(52)][:2230]
 # Load parameter values from our created file
 try:
-    parameter_values = pd.read_csv("../data/parameter_values.csv")
+    parameter_values = coverage_data
     P10 = parameter_values["p_PEP_Exposed"].values
     print("Loaded time-varying P10 values successfully")
     # Ensure we have the right length and add indexing safety
@@ -592,6 +576,7 @@ except Exception as e:
     P10_baseline = 0.25  # This matches R's P10[1]
     P10 = np.full(len(year) + 1, P10_baseline)  # +1 to allow P10[1] indexing
     P10[0] = P10_baseline  # P10[0] for safety
+
 
 mu_h = (1 / 10) * 7  # Inverse of average infective period, rabid human mortality rate
 gamma_d = (b_d - m_d) / K_1  # Dog density dependent mortality
@@ -777,11 +762,6 @@ annual_vaccination["year"] = [1] + [
 # Calculate cumulative new exposures
 annual_vaccination["Cu_new_expo"] = annual_vaccination["new_expo"].cumsum()
 
-# Display results
-print("Head of annual_vaccination:")
-print(annual_vaccination.head())
-print("\nTail of annual_vaccination:")
-print(annual_vaccination.tail())
 
 # Create result summary by year
 result_annual_vaccination = pd.DataFrame(
@@ -833,11 +813,6 @@ result_annual_vaccination["canine_rabies_annual"] = [
 result_annual_vaccination["human_rabies_annual"] = [
     result_annual_vaccination["hum_rabies_cases_cumulative"].iloc[0]
 ] + list(np.diff(result_annual_vaccination["hum_rabies_cases_cumulative"]))
-
-print("\nHead of result_annual_vaccination:")
-print(result_annual_vaccination.head())
-print("\nTail of result_annual_vaccination:")
-print(result_annual_vaccination.tail())
 
 
 ### Summary and plot
