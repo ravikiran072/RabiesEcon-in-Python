@@ -2,8 +2,9 @@ import numpy as np
 import pandas as pd
 import os
 
-# Change to project root directory
-os.chdir(r"c:\Users\mfl3\OneDrive - CDC\Rabies\RabioesEcon-Python")
+# Set working directory to project root (one level up from notebooks)
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+os.chdir(project_root)
 
 
 

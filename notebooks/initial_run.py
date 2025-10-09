@@ -3,11 +3,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import time as tm
+import os
 
+# Set working directory to project root (one level up from notebooks)
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+os.chdir(project_root)
 
-os.chdir(r"C:\Users\mfl3\OneDrive - CDC\Rabies\RabioesEcon-Python")
-coverage_data = pd.read_csv("data\\coverage_data.csv")
-model_parameters = pd.read_excel("data\\model_parameters.xlsx")
+coverage_data = pd.read_csv("data/coverage_data.csv")
+model_parameters = pd.read_excel("data/model_parameters.xlsx")
 
 
 def get_vaccination_coverage(year, scenario="annual_vaccination"):
@@ -73,11 +76,9 @@ Dog_Human_transmission_rate = model_parameters.query(
 # Model parameters
 Program_Area = Km2_of_program_area  # (REQUIRES INPUT) Km2_of_program_area
 R0 = R0_dog_to_dog  # Effective reproductive number at t0
-Sd = (1 - ((1 / 52) / Program_Area)) * Free_roaming_dogs_per_km2  # Susceptible
+Sd = Free_roaming_dogs_per_km2 * (1 - (1 / 52))  # Susceptible - Fixed scaling
 Ed = 0  # Exposed at t0
-Id = Free_roaming_dogs_per_km2 * (
-    (1 / 52) / Km2_of_program_area
-)  # Infectious/Rabid at t0
+Id = Free_roaming_dogs_per_km2 * (1 / 52)  # Infectious/Rabid at t0 - Fixed formula
 Rd = 0  # Immune at t0
 Nd = Free_roaming_dogs_per_km2  # Population at t0
 
@@ -329,7 +330,7 @@ results_no_annual = {
 }
 
 # Loop over step function (NO INTERVENTION - with time-varying coverage from CSV)
-for time in range(1, 2289):
+for time in range(1, 2300):  # Changed from 2289 to 2300 to match Excel
     # Calculate current year
     current_year = (time // 52) + 1
 
@@ -344,8 +345,11 @@ for time in range(1, 2289):
     # Calculate week
     week = 52 if time % 52 == 0 else time % 52
 
-    # Determine alpha_d based on week (but no target_status check)
-    alpha_d = alpha_d1 if (abs(week - 22) + abs(31 - week)) <= 10 else alpha_d2
+    # Determine alpha_d based on week - only if there's actual vaccination coverage
+    if Vaccination_coverage_per_campaign > 0:
+        alpha_d = alpha_d1 if (abs(week - 22) + abs(31 - week)) <= 10 else alpha_d2
+    else:
+        alpha_d = 0  # No vaccination if coverage is 0
 
     # Update dog compartments (WITH vaccination - apply vaccination directly like R No_GAVI code)
     Sd_new = (
@@ -467,8 +471,8 @@ result_no_annual_vaccination = pd.DataFrame(
     ]
 )
 
-for year in range(0, 31):
-    time_point = year * 52
+for year in range(1, 32):  # Changed to start from year 1
+    time_point = (year - 1) * 52  # Adjust time_point calculation
     if time_point < len(no_annual_vaccination):
         row_data = no_annual_vaccination.iloc[time_point]
 
@@ -629,7 +633,7 @@ results = {
 }
 
 # Loop over step function (WITH time-varying coverage from CSV)
-for time in range(1, 2289):
+for time in range(1, 2300):  # Changed from 2289 to 2300 to match Excel
     # Calculate current year
     current_year = (time // 52) + 1
 
@@ -777,8 +781,8 @@ result_annual_vaccination = pd.DataFrame(
     ]
 )
 
-for year in range(0, 31):
-    time_point = year * 52
+for year in range(1, 32):  # Changed to start from year 1
+    time_point = (year - 1) * 52  # Adjust time_point calculation
     if time_point < len(annual_vaccination):
         row_data = annual_vaccination.iloc[time_point]
 
@@ -913,6 +917,7 @@ ax1.set_ylabel("Canine rabies cases", fontsize=12)
 ax1.set_title("Rabid dogs (annual)", fontsize=14, fontweight="bold")
 ax1.legend()
 ax1.grid(True, alpha=0.3)
+ax1.set_xlim(1, 31)  # Ensure x-axis starts from year 1
 
 # Plot 2: Canine rabies cases (cumulative)
 ax2 = axes[0, 1]
@@ -926,6 +931,7 @@ ax2.set_ylabel("Cumulative canine cases", fontsize=12)
 ax2.set_title("Canine rabies cases (cumulative)", fontsize=14, fontweight="bold")
 ax2.legend()
 ax2.grid(True, alpha=0.3)
+ax2.set_xlim(1, 31)  # Ensure x-axis starts from year 1
 
 # Plot 3: Human deaths (annual)
 ax3 = axes[1, 0]
@@ -939,6 +945,7 @@ ax3.set_ylabel("Human deaths", fontsize=12)
 ax3.set_title("Human deaths due to rabies (annual)", fontsize=14, fontweight="bold")
 ax3.legend()
 ax3.grid(True, alpha=0.3)
+ax3.set_xlim(1, 31)  # Ensure x-axis starts from year 1
 
 # Plot 4: Human deaths (cumulative)
 ax4 = axes[1, 1]
@@ -952,6 +959,7 @@ ax4.set_ylabel("Cumulative human cases", fontsize=12)
 ax4.set_title("Human deaths (cumulative)", fontsize=14, fontweight="bold")
 ax4.legend()
 ax4.grid(True, alpha=0.3)
+ax4.set_xlim(1, 31)  # Ensure x-axis starts from year 1
 
 # Adjust layout to prevent overlap
 plt.tight_layout()
@@ -998,6 +1006,7 @@ def create_individual_plots():
     )
     plt.legend(fontsize=12)
     plt.grid(True, alpha=0.3)
+    plt.xlim(1, 31)  # Ensure x-axis starts from year 1
     plt.tight_layout()
     plt.show()
 
@@ -1024,6 +1033,7 @@ def create_individual_plots():
     )
     plt.legend(fontsize=12)
     plt.grid(True, alpha=0.3)
+    plt.xlim(1, 31)  # Ensure x-axis starts from year 1
     plt.tight_layout()
     plt.show()
 
@@ -1073,3 +1083,4 @@ human_reduction = (
 print("\nReduction due to annual vaccination intervention:")
 print(f"  Canine cases: {canine_reduction:.1f}% reduction")
 print(f"  Human deaths: {human_reduction:.1f}% reduction")
+

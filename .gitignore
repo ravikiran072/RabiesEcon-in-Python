@@ -114,3 +114,6 @@ Thumbs.db
 reports/*.html
 reports/*.pdf
 !reports/figures/.gitkeep
+
+# extra_scripts
+/extra_scripts/
