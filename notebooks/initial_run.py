@@ -34,6 +34,27 @@ def get_vaccination_coverage(year, scenario="annual_vaccination"):
         return 0.10 if scenario == "no_annual_vaccination" else 0.50
 
 
+def get_pep_coverage(year, scenario="annual_vaccination"):
+    """
+    Get PEP coverage for a specific year and scenario from CSV data
+    """
+    # Cap year at maximum available in data
+    year = min(year, coverage_data["year"].max())
+    year = max(year, coverage_data["year"].min())
+
+    # Get the row for this year
+    coverage_row = coverage_data[coverage_data["year"] == year]
+
+    if len(coverage_row) > 0:
+        if scenario == "no_annual_vaccination":
+            return coverage_row["no_annual_p_PEP_Exposed"].iloc[0]
+        else:  # annual_vaccination scenario
+            return coverage_row["annual_p_PEP_Exposed"].iloc[0]
+    else:
+        # Fallback values if year not found
+        return 0.25
+
+
 # Initial parameters
 Km2_of_program_area = model_parameters.query("Parameters == 'Km2_of_program_area'")[
     "Values"
@@ -49,17 +70,19 @@ Human_life_expectancy = model_parameters.query("Parameters == 'Human_life_expect
 Humans_per_free_roaming_dog = model_parameters.query(
     "Parameters == 'Humans_per_free_roaming_dog'"
 )["Values"].iloc[0]
-Free_roaming_dog_population = Human_population / Humans_per_free_roaming_dog
-Free_roaming_dogs_per_km2 = Free_roaming_dog_population / Km2_of_program_area
+Free_roaming_dog_population = model_parameters.query(
+    "Parameters == 'Free_roaming_dog_population'"
+)["Values"].iloc[0]
+Free_roaming_dogs_per_km2 = model_parameters.query(
+    "Parameters == 'Free_roaming_dogs_per_km2'"
+)["Values"].iloc[0]
 Dog_birth_rate_per_1000_dogs = model_parameters.query(
     "Parameters == 'Dog_birth_rate_per_1000_dogs'"
 )["Values"].iloc[0]
 Dog_life_expectancy = model_parameters.query("Parameters == 'Dog_life_expectancy'")[
     "Values"
 ].iloc[0]
-R0_dog_to_dog = model_parameters.query("Parameters == 'R0_dog_to_dog'")["Values"].iloc[
-    0
-]
+
 Annual_dog_bite_risk = model_parameters.query("Parameters == 'Annual_dog_bite_risk'")[
     "Values"
 ].iloc[0]
@@ -72,13 +95,16 @@ Probability_of_human_developing_rabies = model_parameters.query(
 Dog_Human_transmission_rate = model_parameters.query(
     "Parameters == 'Dog_Human_transmission_rate'"
 )["Values"].iloc[0]
+R0_dog_to_dog = model_parameters.query(
+    "Parameters == 'R0_dog_to_dog'"
+)["Values"].iloc[0]
 
 # Model parameters
 Program_Area = Km2_of_program_area  # (REQUIRES INPUT) Km2_of_program_area
 R0 = R0_dog_to_dog  # Effective reproductive number at t0
-Sd = Free_roaming_dogs_per_km2 * (1 - (1 / 52))  # Susceptible - Fixed scaling
+Sd = (1-((1/52)/Km2_of_program_area))*Free_roaming_dogs_per_km2 #Free_roaming_dogs_per_km2 * (1 - (1 / 52))  # Susceptible - Fixed scaling
 Ed = 0  # Exposed at t0
-Id = Free_roaming_dogs_per_km2 * (1 / 52)  # Infectious/Rabid at t0 - Fixed formula
+Id = Free_roaming_dogs_per_km2*((1/52)/Km2_of_program_area) #Free_roaming_dogs_per_km2 * (1 / 52)  # Infectious/Rabid at t0 - Fixed formula
 Rd = 0  # Immune at t0
 Nd = Free_roaming_dogs_per_km2  # Population at t0
 
@@ -91,7 +117,7 @@ Rh = 0  # Immune at t0
 b_d = Dog_birth_rate_per_1000_dogs / 52 / 1000  # Dog birth rate
 lambda_d1 = 0  # (REQUIRES INPUT) Loss of vaccination immunity (first 26 weeks after vaccination)
 lambda_d2 = 0.0096  # (REQUIRES INPUT) Loss of vaccination immunity (last 26 weeks after vaccination)
-i_d = 6  # (REQUIRES INPUT) Dog incubation period
+i_d = 6.27  # (REQUIRES INPUT) Dog incubation period
 sigma_d = 1 / i_d  # Inverse of average incubation period
 r_d = 0.45  # (REQUIRES INPUT) Risk of clinical outcome
 m_d = (1 / Dog_life_expectancy) / 52  # Death rate
@@ -106,16 +132,16 @@ K = Nd * (1 + 1 / np.log(Free_roaming_dog_population)) * 1.05  # Mean carrying c
 
 v_d = 0.95  # (REQUIRES INPUT) Dog vaccine efficacy
 Vaccination_coverage_per_campaign = 0.05
-alpha_d1 = 0.001  # Dog vaccination rate 1%
+alpha_d1 = 0.0163  # Dog vaccination rate 1%
 alpha_d2 = 0  # Dog vaccination rate 0%
 
 b_h = (Human_birth / 52) / 1000  # Human birth rate
 lambda_h = 0  # Human loss of vaccination immunity rate
 m_h = (1 / Human_life_expectancy) / 52  # Human mortality rate
-v_h = 0.969  # (REQUIRES INPUT) Human vaccine efficacy
+v_h = 0.93  # (REQUIRES INPUT) Human vaccine efficacy
 alpha_h = 0  # Human prophylactic rate
-beta_dh = 0.000016  # (REQUIRES INPUT) Dog human transmission rate
-P10 = 0.25  # (REQUIRES INPUT) PEP vaccination rate
+beta_dh = 0.0000510  # (REQUIRES INPUT) Dog human transmission rate
+P10 = 0.50  # (REQUIRES INPUT) PEP vaccination rate
 
 mu_h = (
     (1 / 10) * 7
@@ -131,7 +157,7 @@ initial_run = pd.DataFrame(
 results = {"time": [0], "Sd": [Sd], "Ed": [Ed], "Id": [Id], "Rd": [Rd], "Nd": [Nd]}
 
 # Loop over step function
-for time in range(1, 5001):
+for time in range(1, 10001):
     # Determine lambda_d based on time
     lambda_d = lambda_d1 if time < 27 else lambda_d2
 
@@ -241,7 +267,7 @@ Id = initial_run.iloc[-1]["Id"]  # Infectious/Rabid at t0
 
 C_rd = initial_run.iloc[-1]["Id"]
 
-Rd = 0  # Immune at t0
+Rd = 0 #initial_run.iloc[-1]["Rd"]  # Immune at t0
 Nd = Sd + Ed + Id + Rd  # Population at t0
 
 # Human parameters
@@ -268,16 +294,17 @@ K_1 = K  # Mean carrying capacity
 
 v_d = 0.95  # Dog vaccine efficacy
 # Vaccination_coverage_per_campaign will be loaded from CSV for each year
-alpha_d1 = 0.05  # Dog vaccination rate 5% (STATUS QUO - matches R code!)
+alpha_d1 = 0.0163  # Dog vaccination rate 5% (STATUS QUO - matches R code!)
 alpha_d2 = 0  # Dog vaccination rate 0%
 
 b_h = (Human_birth / 52) / 1000  # Human birth rate
 lambda_h = 0  # Human loss of vaccination immunity rate
 m_h = (1 / Human_life_expectancy) / 52  # Human mortality rate
-v_h = 0.969  # Human vaccine efficacy
+v_h = 0.93  # Human vaccine efficacy
 alpha_h = 0  # Human prophylactic rate
-beta_dh = 0.0000156  # Dog human transmission rate (No annual vaccination value)
-P10 = 0.25  # PEP vaccination rate
+beta_dh = 0.0000510	  # Dog human transmission rate (No annual vaccination value) 
+                      # Probability of rabies in biting dogs (suggested 0.1% - 5%) * Probability of rabies in biting dogs (suggested 0.1% - 5%) *Probability of human developing rabies (suggested 17%)
+P10 = 0.50  # PEP vaccination rate
 
 mu_h = (1 / 10) * 7  # Inverse of average infective period, rabid human mortality rate
 gamma_d = (b_d - m_d) / K_1  # Dog density dependent mortality
@@ -330,7 +357,7 @@ results_no_annual = {
 }
 
 # Loop over step function (NO INTERVENTION - with time-varying coverage from CSV)
-for time in range(1, 2300):  # Changed from 2289 to 2300 to match Excel
+for time in range(1, 2300):  # 
     # Calculate current year
     current_year = (time // 52) + 1
 
@@ -338,6 +365,9 @@ for time in range(1, 2300):  # Changed from 2289 to 2300 to match Excel
     Vaccination_coverage_per_campaign = get_vaccination_coverage(
         current_year, "no_annual_vaccination"
     )
+    
+    # Get time-varying PEP coverage from CSV
+    P10_step = get_pep_coverage(current_year, "no_annual_vaccination")
 
     # Determine lambda_d based on time
     lambda_d = lambda_d1 if time < 27 else lambda_d2
@@ -402,18 +432,18 @@ for time in range(1, 2300):  # Changed from 2289 to 2300 to match Excel
         Eh
         + (beta_dh * Sh * Id)
         - (m_h * Eh)
-        - (Eh * p_ExptoInf * P10 * v_h)
-        - (Eh * p_ExptoInf * (1 - P10 * v_h))
+        - (Eh * p_ExptoInf * P10_step * v_h)
+        - (Eh * p_ExptoInf * (1 - P10_step * v_h))
         - (Eh * p_ExptoNoInf)
     )
 
-    Ih_new = Ih + (Eh * p_ExptoInf * (1 - P10 * v_h)) - (m_h * Ih) - (mu_h * Ih)
+    Ih_new = Ih + (Eh * p_ExptoInf * (1 - P10_step * v_h)) - (m_h * Ih) - (mu_h * Ih)
 
-    Dh_new = Dh + (Eh * p_ExptoInf * (1 - P10 * v_h))
+    Dh_new = Dh + (Eh * p_ExptoInf * (1 - P10_step * v_h))
 
     Rh_new = (
         Rh
-        + (Eh * p_ExptoInf * P10 * v_h)
+        + (Eh * p_ExptoInf * P10_step * v_h)
         + (v_h * alpha_h * Sh)
         - (m_h * Rh)
         - (lambda_h * Rh)
@@ -555,9 +585,9 @@ alpha_d2 = 0  # Dog vaccination rate 0%
 b_h = (Human_birth / 52) / 1000  # Human birth rate
 lambda_h = 0  # Human loss of vaccination immunity rate
 m_h = (1 / Human_life_expectancy) / 52  # Human mortality rate
-v_h = 0.969  # Human vaccine efficacy
+v_h = 0.93  # Human vaccine efficacy
 alpha_h = 0  # Human prophylactic rate
-beta_dh = 0.000016  # Dog human transmission rate (Annual vaccination value)
+beta_dh = 0.0000510  # Dog human transmission rate (Annual vaccination value)
 
 # Create year array for P10 indexing - match R code exactly
 year = [1] + [year_val for year_val in range(1, 101) for _ in range(52)][:2230]
@@ -641,6 +671,9 @@ for time in range(1, 2300):  # Changed from 2289 to 2300 to match Excel
     Vaccination_coverage_per_campaign = get_vaccination_coverage(
         current_year, "annual_vaccination"
     )
+    
+    # Get time-varying PEP coverage from CSV
+    P10_step = get_pep_coverage(current_year, "annual_vaccination")
 
     # Calculate alpha_d1 based on current coverage target
     alpha_d1_current = -(1 / 10) * np.log(1 - Vaccination_coverage_per_campaign)
@@ -657,9 +690,6 @@ for time in range(1, 2300):  # Changed from 2289 to 2300 to match Excel
     # Calculate vaccination status
     percent_immunized = Rd / Nd
     target_status = 1 if percent_immunized < Vaccination_coverage_per_campaign else 0
-
-    # Get P10 step value - match R indexing P10[time] where time starts at 1
-    P10_step = P10[min(time, len(P10) - 1)] if time < len(P10) else P10[-1]
 
     # Update dog compartments
     Sd_new = (
@@ -712,8 +742,8 @@ for time in range(1, 2300):  # Changed from 2289 to 2300 to match Excel
         Eh
         + (beta_dh * Sh * Id)
         - (m_h * Eh)
-        - (Eh * p_ExptoInf * P10[1] * v_h)
-        - (Eh * p_ExptoInf * (1 - P10[1] * v_h))
+        - (Eh * p_ExptoInf * P10_step * v_h)
+        - (Eh * p_ExptoInf * (1 - P10_step * v_h))
         - (Eh * p_ExptoNoInf)
     )
 
@@ -723,7 +753,7 @@ for time in range(1, 2300):  # Changed from 2289 to 2300 to match Excel
 
     Rh_new = (
         Rh
-        + (Eh * p_ExptoInf * P10[1] * v_h)
+        + (Eh * p_ExptoInf * P10_step * v_h)
         + (v_h * alpha_h * Sh)
         - (m_h * Rh)
         - (lambda_h * Rh)
@@ -809,278 +839,188 @@ for year in range(1, 32):  # Changed to start from year 1
             [result_annual_vaccination, new_row], ignore_index=True
         )
 
-# Calculate annual differences
-result_annual_vaccination["canine_rabies_annual"] = [
-    result_annual_vaccination["canine_rabies_cumulative"].iloc[0]
-] + list(np.diff(result_annual_vaccination["canine_rabies_cumulative"]))
-
-result_annual_vaccination["human_rabies_annual"] = [
-    result_annual_vaccination["hum_rabies_cases_cumulative"].iloc[0]
-] + list(np.diff(result_annual_vaccination["hum_rabies_cases_cumulative"]))
 
 
-### Summary and plot
 
-# Record start time for performance tracking
-start_time = tm.time()
+annual_vaccination
+no_annual_vaccination
 
-# Create comparison data for canine rabies (annual)
-Rb_an_data = pd.DataFrame(
-    {
-        "year": result_no_annual_vaccination["year"],
-        "no_annual_vaccination": result_no_annual_vaccination["canine_rabies_annual"],
-        "annual_vaccination": result_annual_vaccination["canine_rabies_annual"],
-    }
-)
 
-# Melt the data for plotting
-Rb_an_data_melted = Rb_an_data.melt(
-    id_vars=["year"],
-    value_vars=["no_annual_vaccination", "annual_vaccination"],
-    var_name="variable",
-    value_name="value",
-)
 
-# Create comparison data for canine rabies (cumulative)
-Rb_cu_data = pd.DataFrame(
-    {
-        "year": result_no_annual_vaccination["year"],
-        "no_annual_vaccination": result_no_annual_vaccination[
-            "canine_rabies_cumulative"
-        ],
-        "annual_vaccination": result_annual_vaccination["canine_rabies_cumulative"],
-    }
-)
 
-Rb_cu_data_melted = Rb_cu_data.melt(
-    id_vars=["year"],
-    value_vars=["no_annual_vaccination", "annual_vaccination"],
-    var_name="variable",
-    value_name="value",
-)
 
-# Create comparison data for human rabies (annual)
-Rb_an_data_hu = pd.DataFrame(
-    {
-        "year": result_no_annual_vaccination["year"],
-        "no_annual_vaccination": result_no_annual_vaccination["human_rabies_annual"],
-        "annual_vaccination": result_annual_vaccination["human_rabies_annual"],
-    }
-)
 
-Rb_an_data_hu_melted = Rb_an_data_hu.melt(
-    id_vars=["year"],
-    value_vars=["no_annual_vaccination", "annual_vaccination"],
-    var_name="variable",
-    value_name="value",
-)
+# Extract summary values function (updated)
+def extract_summary_values(df, scenario_name, years = list(range(0,31))):
+    """Extract key summary values matching Excel formula logic"""
+    summary_data = []
+    
+    for year in years:
+        if year == 0:
+            # Year 0: Return 0 (matches IF($B$1=0,0,...) logic)
+            canine_population = 0
+            canine_rabies_cumulative = 0
+            canine_rabies_annual = 0
+            human_population = 0
+            human_rabies_cumulative = 0
+            human_rabies_annual = 0  # Add human rabies annual
+            exposure_cumulative = 0
+            exposure_annual = 0
+        else:
+            # Convert year to time step (year * 52)
+            time_step = year * 52
+            
+            # VLOOKUP equivalent: find row with matching time step
+            if time_step < len(df):
+                row_data = df.iloc[time_step]
+                
+                # Extract values and scale by program area (equivalent to *Define_program!$C$8)
+                canine_population = row_data["Nd"] * Km2_of_program_area
+                canine_rabies_cumulative = row_data["C_rd"] * Km2_of_program_area
+                human_population = row_data["Nh"] * Km2_of_program_area
+                human_rabies_cumulative = row_data["Dh"] * Km2_of_program_area
+                exposure_cumulative = row_data["Cu_new_expo"] * Km2_of_program_area
+                
+                # Calculate annual values
+                if year == 1:
+                    exposure_annual = exposure_cumulative
+                    canine_rabies_annual = canine_rabies_cumulative
+                    human_rabies_annual = human_rabies_cumulative  # Add human rabies annual calculation
+                else:
+                    prev_time = (year - 1) * 52
+                    if prev_time < len(df):
+                        prev_exposure = df.iloc[prev_time]["Cu_new_expo"] * Km2_of_program_area
+                        prev_canine_rabies = df.iloc[prev_time]["C_rd"] * Km2_of_program_area
+                        prev_human_rabies = df.iloc[prev_time]["Dh"] * Km2_of_program_area  # Add previous human rabies
+                        exposure_annual = exposure_cumulative - prev_exposure
+                        canine_rabies_annual = canine_rabies_cumulative - prev_canine_rabies
+                        human_rabies_annual = human_rabies_cumulative - prev_human_rabies  # Calculate human rabies annual
+                    else:
+                        exposure_annual = 0
+                        canine_rabies_annual = 0
+                        human_rabies_annual = 0  # Add human rabies annual
+            else:
+                # If time step exceeds data length, use last available values
+                canine_population = 0
+                canine_rabies_cumulative = 0
+                canine_rabies_annual = 0
+                human_population = 0
+                human_rabies_cumulative = 0
+                human_rabies_annual = 0  # Add human rabies annual
+                exposure_cumulative = 0
+                exposure_annual = 0
+        
+        summary_data.append({
+            'Year': year,
+            'Canine_population': canine_population,
+            'Canine_rabies_cumulative': canine_rabies_cumulative,
+            'Canine_rabies_annual': canine_rabies_annual,
+            'Human_population': human_population,
+            'Human_rabies_cumulative': human_rabies_cumulative,
+            'Human_rabies_annual': human_rabies_annual,  # Add human rabies annual to output
+            'Exposure_cumulative': exposure_cumulative,
+            'Exposure_annual': exposure_annual
+        })
+    
+    return pd.DataFrame(summary_data)
 
-# Create comparison data for human rabies (cumulative)
-Rb_cu_data_hu = pd.DataFrame(
-    {
-        "year": result_no_annual_vaccination["year"],
-        "no_annual_vaccination": result_no_annual_vaccination[
-            "hum_rabies_cases_cumulative"
-        ],
-        "annual_vaccination": result_annual_vaccination["hum_rabies_cases_cumulative"],
-    }
-)
+# Create Excel-equivalent summary tables
+def create_excel_equivalent_summary():
+    """Create summary tables that match Excel output exactly"""
+    
+    # Extract values for years 0-5 for both scenarios
+    no_annual_summary = extract_summary_values(no_annual_vaccination, "No Annual Vaccination", years=[0, 1, 2, 3, 4, 5])
+    annual_summary = extract_summary_values(annual_vaccination, "Annual Vaccination", years=[0, 1, 2, 3, 4, 5])
+    
+    # Create comparison table matching your Excel structure
+    excel_summary = pd.DataFrame({
+        'Year': [0, 1, 2, 3, 4, 5],
+        'No_Annual_Canine_Pop': no_annual_summary['Canine_population'].round(0),
+        'Annual_Canine_Pop': annual_summary['Canine_population'].round(0),
+        'No_Annual_Canine_Rabies_Cum': no_annual_summary['Canine_rabies_cumulative'].round(0),
+        'Annual_Canine_Rabies_Cum': annual_summary['Canine_rabies_cumulative'].round(0),
+        'No_Annual_Canine_Rabies_Ann': no_annual_summary['Canine_rabies_annual'].round(0),
+        'Annual_Canine_Rabies_Ann': annual_summary['Canine_rabies_annual'].round(0),
+        'No_Annual_Human_Pop': no_annual_summary['Human_population'].round(0),
+        'Annual_Human_Pop': annual_summary['Human_population'].round(0),
+        'No_Annual_Human_Deaths_Cum': no_annual_summary['Human_rabies_cumulative'].round(0),
+        'Annual_Human_Deaths_Cum': annual_summary['Human_rabies_cumulative'].round(0),
+        'No_Annual_Human_Deaths_Ann': no_annual_summary['Human_rabies_annual'].round(0),  # Add human rabies annual
+        'Annual_Human_Deaths_Ann': annual_summary['Human_rabies_annual'].round(0),  # Add human rabies annual
+        'No_Annual_Exposure_Cum': no_annual_summary['Exposure_cumulative'].round(0),
+        'Annual_Exposure_Cum': annual_summary['Exposure_cumulative'].round(0),
+        'No_Annual_Exposure_Ann': no_annual_summary['Exposure_annual'].round(0),
+        'Annual_Exposure_Ann': annual_summary['Exposure_annual'].round(0)
+    })
+    
+    return excel_summary
 
-Rb_cu_data_hu_melted = Rb_cu_data_hu.melt(
-    id_vars=["year"],
-    value_vars=["no_annual_vaccination", "annual_vaccination"],
-    var_name="variable",
-    value_name="value",
-)
+excel_equivalent = create_excel_equivalent_summary()
 
-# Set up the plot style
-plt.style.use("default")
-sns.set_palette(["red", "green"])
 
-# Create figure with subplots (2x2 grid)
-fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-fig.suptitle(
-    "Rabies Model Comparison: Annual Vaccination vs No Annual Vaccination",
-    fontsize=16,
-    fontweight="bold",
-)
 
-# Plot 1: Canine rabies cases (annual)
-ax1 = axes[0, 0]
-for variable in ["no_annual_vaccination", "annual_vaccination"]:
-    subset = Rb_an_data_melted[Rb_an_data_melted["variable"] == variable]
-    color = "red" if variable == "no_annual_vaccination" else "green"
-    ax1.plot(subset["year"], subset["value"], label=variable, color=color, linewidth=2)
+# Extract annual rabies data for both scenarios (years 1-30)
+no_annual_summary = extract_summary_values(no_annual_vaccination, "No Annual Vaccination")
+annual_summary = extract_summary_values(annual_vaccination, "Annual Vaccination")
 
-ax1.set_xlabel("Year", fontsize=12)
-ax1.set_ylabel("Canine rabies cases", fontsize=12)
-ax1.set_title("Rabid dogs (annual)", fontsize=14, fontweight="bold")
-ax1.legend()
-ax1.grid(True, alpha=0.3)
-ax1.set_xlim(1, 31)  # Ensure x-axis starts from year 1
+# Filter data to start from year 1
+no_annual_filtered = no_annual_summary[no_annual_summary["Year"] >= 1]
+annual_filtered = annual_summary[annual_summary["Year"] >= 1]
 
-# Plot 2: Canine rabies cases (cumulative)
-ax2 = axes[0, 1]
-for variable in ["no_annual_vaccination", "annual_vaccination"]:
-    subset = Rb_cu_data_melted[Rb_cu_data_melted["variable"] == variable]
-    color = "red" if variable == "no_annual_vaccination" else "green"
-    ax2.plot(subset["year"], subset["value"], label=variable, color=color, linewidth=2)
+# Create 2x2 subplot grid
+fig, axes = plt.subplots(2, 2, figsize=(15, 10))
 
-ax2.set_xlabel("Year", fontsize=12)
-ax2.set_ylabel("Cumulative canine cases", fontsize=12)
-ax2.set_title("Canine rabies cases (cumulative)", fontsize=14, fontweight="bold")
-ax2.legend()
-ax2.grid(True, alpha=0.3)
-ax2.set_xlim(1, 31)  # Ensure x-axis starts from year 1
+# Plot 1: Rabid dogs (annual) - Top Left
+axes[0,0].plot(no_annual_filtered["Year"], no_annual_filtered["Canine_rabies_annual"], 
+               linewidth=3, color='red', label='No vaccination campaign')
+axes[0,0].plot(annual_filtered["Year"], annual_filtered["Canine_rabies_annual"], 
+               linewidth=3, color='green', label='Annual vaccination campaign')
+axes[0,0].set_title("Rabid dogs (annual)", fontsize=14, fontweight='bold')
+axes[0,0].set_xlabel("Year", fontsize=12)
+axes[0,0].set_ylabel("Canine rabies cases", fontsize=12)
+axes[0,0].grid(True, alpha=0.3)
+axes[0,0].set_xlim(1, 30)
 
-# Plot 3: Human deaths (annual)
-ax3 = axes[1, 0]
-for variable in ["no_annual_vaccination", "annual_vaccination"]:
-    subset = Rb_an_data_hu_melted[Rb_an_data_hu_melted["variable"] == variable]
-    color = "red" if variable == "no_annual_vaccination" else "green"
-    ax3.plot(subset["year"], subset["value"], label=variable, color=color, linewidth=2)
+# Plot 2: Canine rabies cases (cumulative) - Top Right
+axes[0,1].plot(no_annual_filtered["Year"], no_annual_filtered["Canine_rabies_cumulative"], 
+               linewidth=3, color='red', label='No vaccination campaign')
+axes[0,1].plot(annual_filtered["Year"], annual_filtered["Canine_rabies_cumulative"], 
+               linewidth=3, color='green', label='Annual vaccination campaign')
+axes[0,1].set_title("Canine rabies cases (cumulative)", fontsize=14, fontweight='bold')
+axes[0,1].set_xlabel("Year", fontsize=12)
+axes[0,1].set_ylabel("Cumulative canine cases", fontsize=12)
+axes[0,1].grid(True, alpha=0.3)
+axes[0,1].set_xlim(1, 30)
 
-ax3.set_xlabel("Year", fontsize=12)
-ax3.set_ylabel("Human deaths", fontsize=12)
-ax3.set_title("Human deaths due to rabies (annual)", fontsize=14, fontweight="bold")
-ax3.legend()
-ax3.grid(True, alpha=0.3)
-ax3.set_xlim(1, 31)  # Ensure x-axis starts from year 1
+# Plot 3: Human deaths due to rabies (annual) - Bottom Left
+axes[1,0].plot(no_annual_filtered["Year"], no_annual_filtered["Human_rabies_annual"], 
+               linewidth=3, color='red', label='No vaccination campaign')
+axes[1,0].plot(annual_filtered["Year"], annual_filtered["Human_rabies_annual"], 
+               linewidth=3, color='green', label='Annual vaccination campaign')
+axes[1,0].set_title("Human deaths due to rabies (annual)", fontsize=14, fontweight='bold')
+axes[1,0].set_xlabel("Year", fontsize=12)
+axes[1,0].set_ylabel("Human deaths", fontsize=12)
+axes[1,0].grid(True, alpha=0.3)
+axes[1,0].set_xlim(1, 30)
 
-# Plot 4: Human deaths (cumulative)
-ax4 = axes[1, 1]
-for variable in ["no_annual_vaccination", "annual_vaccination"]:
-    subset = Rb_cu_data_hu_melted[Rb_cu_data_hu_melted["variable"] == variable]
-    color = "red" if variable == "no_annual_vaccination" else "green"
-    ax4.plot(subset["year"], subset["value"], label=variable, color=color, linewidth=2)
+# Plot 4: Human deaths (cumulative) - Bottom Right
+axes[1,1].plot(no_annual_filtered["Year"], no_annual_filtered["Human_rabies_cumulative"], 
+               linewidth=3, color='red', label='No vaccination campaign')
+axes[1,1].plot(annual_filtered["Year"], annual_filtered["Human_rabies_cumulative"], 
+               linewidth=3, color='green', label='Annual vaccination campaign')
+axes[1,1].set_title("Human deaths (cumulative)", fontsize=14, fontweight='bold')
+axes[1,1].set_xlabel("Year", fontsize=12)
+axes[1,1].set_ylabel("Cumulative human deaths", fontsize=12)
+axes[1,1].grid(True, alpha=0.3)
+axes[1,1].set_xlim(1, 30)
 
-ax4.set_xlabel("Year", fontsize=12)
-ax4.set_ylabel("Cumulative human cases", fontsize=12)
-ax4.set_title("Human deaths (cumulative)", fontsize=14, fontweight="bold")
-ax4.legend()
-ax4.grid(True, alpha=0.3)
-ax4.set_xlim(1, 31)  # Ensure x-axis starts from year 1
+# Add a single legend at the bottom
+handles, labels = axes[0,0].get_legend_handles_labels()
+fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, -0.02), ncol=2, fontsize=12)
 
-# Adjust layout to prevent overlap
+# Adjust layout and show
 plt.tight_layout()
-
-# Show the plot
+plt.subplots_adjust(bottom=0.1)
 plt.show()
 
-# Alternative: Save the plot
-# plt.savefig('rabies_comparison_plots.png', dpi=300, bbox_inches='tight')
-
-# Calculate and display execution time
-end_time = tm.time()
-execution_time = end_time - start_time
-print(f"\nExecution time: {execution_time:.2f} seconds")
-
-
-# Optional: Create individual plots with better styling
-def create_individual_plots():
-    """Create individual plots with enhanced styling"""
-
-    # Set style for publication-quality plots
-    plt.style.use("seaborn-v0_8")
-
-    # Plot 1: Annual canine cases
-    plt.figure(figsize=(10, 6))
-    plt.plot(
-        Rb_an_data["year"],
-        Rb_an_data["no_annual_vaccination"],
-        "r-",
-        linewidth=2.5,
-        label="No Annual Vaccination",
-    )
-    plt.plot(
-        Rb_an_data["year"],
-        Rb_an_data["annual_vaccination"],
-        "g-",
-        linewidth=2.5,
-        label="Annual Vaccination",
-    )
-    plt.xlabel("Year", fontsize=14)
-    plt.ylabel("Annual Canine Rabies Cases", fontsize=14)
-    plt.title(
-        "Annual Rabid Dogs: Intervention Comparison", fontsize=16, fontweight="bold"
-    )
-    plt.legend(fontsize=12)
-    plt.grid(True, alpha=0.3)
-    plt.xlim(1, 31)  # Ensure x-axis starts from year 1
-    plt.tight_layout()
-    plt.show()
-
-    # Plot 2: Cumulative human deaths
-    plt.figure(figsize=(10, 6))
-    plt.plot(
-        Rb_cu_data_hu["year"],
-        Rb_cu_data_hu["no_annual_vaccination"],
-        "r-",
-        linewidth=2.5,
-        label="No Annual Vaccination",
-    )
-    plt.plot(
-        Rb_cu_data_hu["year"],
-        Rb_cu_data_hu["annual_vaccination"],
-        "g-",
-        linewidth=2.5,
-        label="Annual Vaccination",
-    )
-    plt.xlabel("Year", fontsize=14)
-    plt.ylabel("Cumulative Human Deaths", fontsize=14)
-    plt.title(
-        "Cumulative Human Deaths: Intervention Impact", fontsize=16, fontweight="bold"
-    )
-    plt.legend(fontsize=12)
-    plt.grid(True, alpha=0.3)
-    plt.xlim(1, 31)  # Ensure x-axis starts from year 1
-    plt.tight_layout()
-    plt.show()
-
-
-# Uncomment to create individual plots
-# create_individual_plots()
-
-# Print summary statistics
-print("\n" + "=" * 50)
-print("SUMMARY STATISTICS")
-print("=" * 50)
-
-print("\nFinal Year (Year 30):")
-print("Canine rabies cases (cumulative):")
-print(
-    f"  No Annual Vaccination: {result_no_annual_vaccination.iloc[-1]['canine_rabies_cumulative']:,.0f}"
-)
-print(
-    f"  Annual Vaccination: {result_annual_vaccination.iloc[-1]['canine_rabies_cumulative']:,.0f}"
-)
-
-print("\nHuman deaths (cumulative):")
-print(
-    f"  No Annual Vaccination: {result_no_annual_vaccination.iloc[-1]['hum_rabies_cases_cumulative']:,.0f}"
-)
-print(
-    f"  Annual Vaccination: {result_annual_vaccination.iloc[-1]['hum_rabies_cases_cumulative']:,.0f}"
-)
-
-# Calculate percentage reduction
-canine_reduction = (
-    (
-        result_no_annual_vaccination.iloc[-1]["canine_rabies_cumulative"]
-        - result_annual_vaccination.iloc[-1]["canine_rabies_cumulative"]
-    )
-    / result_no_annual_vaccination.iloc[-1]["canine_rabies_cumulative"]
-) * 100
-
-human_reduction = (
-    (
-        result_no_annual_vaccination.iloc[-1]["hum_rabies_cases_cumulative"]
-        - result_annual_vaccination.iloc[-1]["hum_rabies_cases_cumulative"]
-    )
-    / result_no_annual_vaccination.iloc[-1]["hum_rabies_cases_cumulative"]
-) * 100
-
-print("\nReduction due to annual vaccination intervention:")
-print(f"  Canine cases: {canine_reduction:.1f}% reduction")
-print(f"  Human deaths: {human_reduction:.1f}% reduction")
-
+# ...existing code...
