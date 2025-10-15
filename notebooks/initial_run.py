@@ -99,6 +99,67 @@ R0_dog_to_dog = model_parameters.query(
     "Parameters == 'R0_dog_to_dog'"
 )["Values"].iloc[0]
 
+# Suspect exposure parameters
+inflation_factor_for_the_suspect_exposure = model_parameters.query(
+    "Parameters == 'inflation_factor_for_the_suspect_exposure'"
+)["Values"].iloc[0]
+post_elimination_pep_reduction = model_parameters.query(
+    "Parameters == 'post_elimination_pep_reduction'"
+)["Values"].iloc[0]
+
+# Suspect animal cost parameters (from model_parameters file)
+try:
+    quarantined_animal_prob = model_parameters.query("Parameters == 'quarantined_animal_prob'")["Values"].iloc[0]
+    quarantined_animal_cost = model_parameters.query("Parameters == 'quarantined_animal_cost'")["Values"].iloc[0]
+    lab_test_prob = model_parameters.query("Parameters == 'lab_test_prob'")["Values"].iloc[0]
+    lab_test_cost = model_parameters.query("Parameters == 'lab_test_cost'")["Values"].iloc[0]
+    bite_investigation_prob = model_parameters.query("Parameters == 'bite_investigation_prob'")["Values"].iloc[0]
+    bite_investigation_cost = model_parameters.query("Parameters == 'bite_investigation_cost'")["Values"].iloc[0]
+except IndexError:
+    # Fallback values if parameters not found in file
+    print("Warning: Suspect animal cost parameters not found in model_parameters file, using default values")
+    quarantined_animal_prob = 0.0008
+    quarantined_animal_cost = 140.00
+    lab_test_prob = 0.011333333
+    lab_test_cost = 26.49
+    bite_investigation_prob = 0.466666667
+    bite_investigation_cost = 3.25
+
+# Calculate cost per suspect exposure
+cost_per_suspect_exposure = (
+    quarantined_animal_prob * quarantined_animal_cost +
+    lab_test_prob * lab_test_cost +
+    bite_investigation_prob * bite_investigation_cost
+)
+
+# Vaccination cost parameter (from model_parameters file)
+try:
+    vaccination_cost_per_dog = model_parameters.query("Parameters == 'vaccination_cost_per_dog'")["Values"].iloc[0]
+except IndexError:
+    # Fallback value based on Excel (2.45)
+    vaccination_cost_per_dog = 2.45
+    print(f"Warning: vaccination_cost_per_dog not found in model_parameters file, using default value: {vaccination_cost_per_dog}")
+
+# PEP cost parameters (from model_parameters file)
+try:
+    pep_and_other_costs = model_parameters.query("Parameters == 'pep_and_other_costs'")["Values"].iloc[0]
+    pep_prob_no_campaign = model_parameters.query("Parameters == 'pep_prob_no_campaign'")["Values"].iloc[0]
+    pep_prob_annual_campaign = model_parameters.query("Parameters == 'pep_prob_annual_campaign'")["Values"].iloc[0]
+except IndexError:
+    # Fallback values based on Excel screenshots
+    pep_and_other_costs = 17.40  # PEP cost & Other Costs
+    pep_prob_no_campaign = 0.25  # Probability of receiving PEP, post-exposure (no Vaccination program)
+    pep_prob_annual_campaign = 0.5  # Probability of receiving PEP, post-exposure (with Vaccination program)
+    print(f"Warning: PEP cost parameters not found in model_parameters file, using default values: PEP cost=${pep_and_other_costs}, No campaign prob={pep_prob_no_campaign}, Annual campaign prob={pep_prob_annual_campaign}")
+
+# YLL parameter (from model_parameters file)
+try:
+    YLL = model_parameters.query("Parameters == 'YLL'")["Values"].iloc[0]
+except IndexError:
+    # Fallback value based on Excel screenshot (26.32 Years of Life Lost per death)
+    YLL = 26.32
+    print(f"Warning: YLL parameter not found in model_parameters file, using default value: {YLL}")
+
 # Model parameters
 Program_Area = Km2_of_program_area  # (REQUIRES INPUT) Km2_of_program_area
 R0 = R0_dog_to_dog  # Effective reproductive number at t0
@@ -866,6 +927,14 @@ def extract_summary_values(df, scenario_name, years = list(range(0,31))):
             human_rabies_annual = 0  # Add human rabies annual
             exposure_cumulative = 0
             exposure_annual = 0
+            suspect_exposure_cumulative = 0
+            suspect_exposure_annual = 0
+            suspect_exposure_cost_cumulative = 0
+            suspect_exposure_cost_annual = 0
+            vaccination_cost_cumulative = 0
+            vaccination_cost_annual = 0
+            pep_cost_cumulative = 0
+            pep_cost_annual = 0
         else:
             # Convert year to time step (year * 52)
             time_step = year * 52
@@ -909,7 +978,79 @@ def extract_summary_values(df, scenario_name, years = list(range(0,31))):
                 human_rabies_annual = 0  # Add human rabies annual
                 exposure_cumulative = 0
                 exposure_annual = 0
+                suspect_exposure_cumulative = 0
+                suspect_exposure_annual = 0
+                suspect_exposure_cost_cumulative = 0
+                suspect_exposure_cost_annual = 0
+                vaccination_cost_cumulative = 0
+                vaccination_cost_annual = 0
+                pep_cost_cumulative = 0
+                pep_cost_annual = 0
         
+        # Calculate suspect exposures based on scenario
+        if scenario_name == "No Annual Vaccination":
+            # No vaccination program formula: inflation_factor * exposure_cumulative, inflation_factor * exposure_annual
+            suspect_exposure_cumulative = inflation_factor_for_the_suspect_exposure * exposure_cumulative
+            suspect_exposure_annual = inflation_factor_for_the_suspect_exposure * exposure_annual
+        else:
+            # Annual vaccination program (Option 1): MAX(((1-post_elimination_pep_reduction)*previous_suspect_values), (inflation_factor*current_exposure_values))
+            if year == 1:
+                # First year: use inflation factor since no previous data
+                suspect_exposure_cumulative = inflation_factor_for_the_suspect_exposure * exposure_cumulative
+                suspect_exposure_annual = inflation_factor_for_the_suspect_exposure * exposure_annual
+            else:
+                # Get previous year's suspect exposures from summary_data
+                prev_suspect_cum = summary_data[-1]['Suspect_exposure_cumulative'] if summary_data else 0
+                prev_suspect_ann = summary_data[-1]['Suspect_exposure_annual'] if summary_data else 0
+                
+                # Apply post-elimination reduction to PREVIOUS suspect exposures
+                reduced_prev_cum = (1 - post_elimination_pep_reduction) * prev_suspect_cum
+                reduced_prev_ann = (1 - post_elimination_pep_reduction) * prev_suspect_ann
+                
+                # Compare with current inflated exposures
+                inflated_current_cum = inflation_factor_for_the_suspect_exposure * exposure_cumulative
+                inflated_current_ann = inflation_factor_for_the_suspect_exposure * exposure_annual
+                
+                # Take maximum - this allows the switch to occur
+                suspect_exposure_cumulative = max(reduced_prev_cum, inflated_current_cum)
+                suspect_exposure_annual = max(reduced_prev_ann, inflated_current_ann)
+
+        # Calculate suspect exposure costs
+        suspect_exposure_cost_cumulative = suspect_exposure_cumulative * cost_per_suspect_exposure
+        suspect_exposure_cost_annual = suspect_exposure_annual * cost_per_suspect_exposure
+
+        # Calculate vaccination costs based on scenario
+        # Formula: canine_population * vaccination_coverage * vaccination_cost_per_dog
+        try:
+            if scenario_name == "No Annual Vaccination":
+                vaccination_coverage = get_vaccination_coverage(year, "no_annual_vaccination")
+            else:
+                vaccination_coverage = get_vaccination_coverage(year, "annual_vaccination")
+            
+            vaccination_cost_annual = canine_population * vaccination_coverage * vaccination_cost_per_dog
+            
+            # Calculate cumulative vaccination costs
+            if year == 1:
+                vaccination_cost_cumulative = vaccination_cost_annual
+            else:
+                prev_cum_cost = summary_data[-1]['Vaccination_cost_cumulative'] if summary_data else 0
+                vaccination_cost_cumulative = prev_cum_cost + vaccination_cost_annual
+        except:
+            # Fallback if coverage data not available
+            vaccination_cost_cumulative = 0
+            vaccination_cost_annual = 0
+
+        # Calculate PEP costs based on suspect exposures and scenario
+        # Formula: suspect_exposures * pep_probability * pep_cost
+        if scenario_name == "No Annual Vaccination":
+            # No vaccination program: suspect_exposures * pep_prob_no_campaign * pep_cost
+            pep_cost_annual = suspect_exposure_annual * pep_prob_no_campaign * pep_and_other_costs
+            pep_cost_cumulative = suspect_exposure_cumulative * pep_prob_no_campaign * pep_and_other_costs
+        else:
+            # Annual vaccination program: suspect_exposures * pep_prob_annual_campaign * pep_cost
+            pep_cost_annual = suspect_exposure_annual * pep_prob_annual_campaign * pep_and_other_costs
+            pep_cost_cumulative = suspect_exposure_cumulative * pep_prob_annual_campaign * pep_and_other_costs
+
         summary_data.append({
             'Year': year,
             'Canine_population': canine_population,
@@ -919,7 +1060,15 @@ def extract_summary_values(df, scenario_name, years = list(range(0,31))):
             'Human_rabies_cumulative': human_rabies_cumulative,
             'Human_rabies_annual': human_rabies_annual,  # Add human rabies annual to output
             'Exposure_cumulative': exposure_cumulative,
-            'Exposure_annual': exposure_annual
+            'Exposure_annual': exposure_annual,
+            'Suspect_exposure_cumulative': suspect_exposure_cumulative,
+            'Suspect_exposure_annual': suspect_exposure_annual,
+            'Suspect_exposure_cost_cumulative': suspect_exposure_cost_cumulative,
+            'Suspect_exposure_cost_annual': suspect_exposure_cost_annual,
+            'Vaccination_cost_cumulative': vaccination_cost_cumulative,
+            'Vaccination_cost_annual': vaccination_cost_annual,
+            'PEP_cost_cumulative': pep_cost_cumulative,
+            'PEP_cost_annual': pep_cost_annual
         })
     
     return pd.DataFrame(summary_data)
@@ -929,12 +1078,12 @@ def create_excel_equivalent_summary():
     """Create summary tables that match Excel output exactly"""
     
     # Extract values for years 0-5 for both scenarios
-    no_annual_summary = extract_summary_values(no_annual_vaccination, "No Annual Vaccination", years=[0, 1, 2, 3, 4, 5])
-    annual_summary = extract_summary_values(annual_vaccination, "Annual Vaccination", years=[0, 1, 2, 3, 4, 5])
+    no_annual_summary = extract_summary_values(no_annual_vaccination, "No Annual Vaccination", years=list(range(0,31)))
+    annual_summary = extract_summary_values(annual_vaccination, "Annual Vaccination", years=list(range(0,31)))
     
     # Create comparison table matching your Excel structure
     excel_summary = pd.DataFrame({
-        'Year': [0, 1, 2, 3, 4, 5],
+        'Year': list(range(0,31)),
         'No_Annual_Canine_Pop': no_annual_summary['Canine_population'].round(0),
         'Annual_Canine_Pop': annual_summary['Canine_population'].round(0),
         'No_Annual_Canine_Rabies_Cum': no_annual_summary['Canine_rabies_cumulative'].round(0),
@@ -950,13 +1099,216 @@ def create_excel_equivalent_summary():
         'No_Annual_Exposure_Cum': no_annual_summary['Exposure_cumulative'].round(0),
         'Annual_Exposure_Cum': annual_summary['Exposure_cumulative'].round(0),
         'No_Annual_Exposure_Ann': no_annual_summary['Exposure_annual'].round(0),
-        'Annual_Exposure_Ann': annual_summary['Exposure_annual'].round(0)
+        'Annual_Exposure_Ann': annual_summary['Exposure_annual'].round(0),
+        'No_Annual_Suspect_Exposure_Cum': no_annual_summary['Suspect_exposure_cumulative'].round(0),
+        'Annual_Suspect_Exposure_Cum': annual_summary['Suspect_exposure_cumulative'].round(0),
+        'No_Annual_Suspect_Exposure_Ann': no_annual_summary['Suspect_exposure_annual'].round(0),
+        'Annual_Suspect_Exposure_Ann': annual_summary['Suspect_exposure_annual'].round(0),
+        'No_Annual_Suspect_Exposure_Cost_Cum': no_annual_summary['Suspect_exposure_cost_cumulative'].round(2),
+        'Annual_Suspect_Exposure_Cost_Cum': annual_summary['Suspect_exposure_cost_cumulative'].round(2),
+        'No_Annual_Suspect_Exposure_Cost_Ann': no_annual_summary['Suspect_exposure_cost_annual'].round(2),
+        'Annual_Suspect_Exposure_Cost_Ann': annual_summary['Suspect_exposure_cost_annual'].round(2),
+        'No_Annual_Vaccination_Cost_Cum': no_annual_summary['Vaccination_cost_cumulative'].round(2),
+        'Annual_Vaccination_Cost_Cum': annual_summary['Vaccination_cost_cumulative'].round(2),
+        'No_Annual_Vaccination_Cost_Ann': no_annual_summary['Vaccination_cost_annual'].round(2),
+        'Annual_Vaccination_Cost_Ann': annual_summary['Vaccination_cost_annual'].round(2),
+        'No_Annual_PEP_Cost_Cum': no_annual_summary['PEP_cost_cumulative'].round(2),
+        'Annual_PEP_Cost_Cum': annual_summary['PEP_cost_cumulative'].round(2),
+        'No_Annual_PEP_Cost_Ann': no_annual_summary['PEP_cost_annual'].round(2),
+        'Annual_PEP_Cost_Ann': annual_summary['PEP_cost_annual'].round(2)
     })
+    
+    # Calculate total costs (Suspect_Exposure_Cost + Vaccination_Cost + PEP_Cost)
+    # Annual Total Costs
+    excel_summary['No_Annual_Total_Cost_Ann'] = (
+        excel_summary['No_Annual_Suspect_Exposure_Cost_Ann'] + 
+        excel_summary['No_Annual_Vaccination_Cost_Ann'] + 
+        excel_summary['No_Annual_PEP_Cost_Ann']
+    ).round(2)
+    
+    excel_summary['Annual_Total_Cost_Ann'] = (
+        excel_summary['Annual_Suspect_Exposure_Cost_Ann'] + 
+        excel_summary['Annual_Vaccination_Cost_Ann'] + 
+        excel_summary['Annual_PEP_Cost_Ann']
+    ).round(2)
+    
+    # Cumulative Total Costs
+    excel_summary['No_Annual_Total_Cost_Cum'] = (
+        excel_summary['No_Annual_Suspect_Exposure_Cost_Cum'] + 
+        excel_summary['No_Annual_Vaccination_Cost_Cum'] + 
+        excel_summary['No_Annual_PEP_Cost_Cum']
+    ).round(2)
+    
+    excel_summary['Annual_Total_Cost_Cum'] = (
+        excel_summary['Annual_Suspect_Exposure_Cost_Cum'] + 
+        excel_summary['Annual_Vaccination_Cost_Cum'] + 
+        excel_summary['Annual_PEP_Cost_Cum']
+    ).round(2)
+    
+    # Calculate Additional costs (Option 1 = Annual - No Annual)
+    # Additional costs (annual) = Annual Total Cost - No Annual Total Cost
+    excel_summary['Additional_Cost_Ann'] = (
+        excel_summary['Annual_Total_Cost_Ann'] - 
+        excel_summary['No_Annual_Total_Cost_Ann']
+    ).round(2)
+    
+    # Additional costs (cumulative) = Annual Total Cost Cumulative - No Annual Total Cost Cumulative
+    excel_summary['Additional_Cost_Cum'] = (
+        excel_summary['Annual_Total_Cost_Cum'] - 
+        excel_summary['No_Annual_Total_Cost_Cum']
+    ).round(2)
+    
+    # Calculate Deaths Averted (No Annual - Annual, since fewer deaths with vaccination is positive)
+    # Deaths averted (annual) = No Annual Human Deaths - Annual Human Deaths
+    excel_summary['Deaths_Averted_Ann'] = (
+        excel_summary['No_Annual_Human_Deaths_Ann'] - 
+        excel_summary['Annual_Human_Deaths_Ann']
+    ).round(2)
+    
+    # Deaths averted (cumulative) = No Annual Human Deaths Cumulative - Annual Human Deaths Cumulative
+    excel_summary['Deaths_Averted_Cum'] = (
+        excel_summary['No_Annual_Human_Deaths_Cum'] - 
+        excel_summary['Annual_Human_Deaths_Cum']
+    ).round(2)
+    
+    # Calculate DALYs Averted (Deaths Averted * YLL)
+    # DALYs averted (annual) = Deaths Averted Annual * YLL
+    excel_summary['DALYs_Averted_Ann'] = (
+        excel_summary['Deaths_Averted_Ann'] * YLL
+    ).round(2)
+    
+    # DALYs averted (cumulative) = Deaths Averted Cumulative * YLL
+    excel_summary['DALYs_Averted_Cum'] = (
+        excel_summary['Deaths_Averted_Cum'] * YLL
+    ).round(2)
+    
+    # Calculate Cost per Death averted (Additional costs / Deaths averted)
+    # Cost per Death averted (annual) = Additional Cost Annual / Deaths Averted Annual
+    excel_summary['Cost_per_Death_Averted_Ann'] = (
+        excel_summary['Additional_Cost_Ann'] / excel_summary['Deaths_Averted_Ann']
+    ).replace([np.inf, -np.inf], np.nan).round(2)
+    
+    # Cost per Death averted (cumulative) = Additional Cost Cumulative / Deaths Averted Cumulative  
+    excel_summary['Cost_per_Death_Averted_Cum'] = (
+        excel_summary['Additional_Cost_Cum'] / excel_summary['Deaths_Averted_Cum']
+    ).replace([np.inf, -np.inf], np.nan).round(2)
+    
+    # Calculate Cost per DALY averted (Additional costs / DALYs averted)
+    # Cost per DALY averted (annual) = Additional Cost Annual / DALYs Averted Annual
+    excel_summary['Cost_per_DALY_Averted_Ann'] = (
+        excel_summary['Additional_Cost_Ann'] / excel_summary['DALYs_Averted_Ann']
+    ).replace([np.inf, -np.inf], np.nan).round(2)
+    
+    # Cost per DALY averted (cumulative) = Additional Cost Cumulative / DALYs Averted Cumulative
+    excel_summary['Cost_per_DALY_Averted_Cum'] = (
+        excel_summary['Additional_Cost_Cum'] / excel_summary['DALYs_Averted_Cum']
+    ).replace([np.inf, -np.inf], np.nan).round(2)
     
     return excel_summary
 
 excel_equivalent = create_excel_equivalent_summary()
 
+def create_program_summary_table():
+    """Create comprehensive program summary table matching Excel format"""
+    
+    # Extract summary data for both scenarios
+    no_annual_summary = extract_summary_values(no_annual_vaccination, "No Annual Vaccination", years=list(range(0,31)))
+    annual_summary = extract_summary_values(annual_vaccination, "Annual Vaccination", years=list(range(0,31)))
+    
+    # Define fixed time periods
+    time_periods = [5, 10, 30]
+    
+    # Calculate suspect exposure rates per 100,000 persons for year 1
+    year1_no_vacc_suspect_rate = (no_annual_summary.iloc[1]['Suspect_exposure_annual'] / 
+                                  no_annual_summary.iloc[1]['Human_population']) * 100000
+    year1_vacc_suspect_rate = (annual_summary.iloc[1]['Suspect_exposure_annual'] / 
+                               annual_summary.iloc[1]['Human_population']) * 100000
+    
+    print("=" * 80)
+    print("PROGRAM SUMMARY TABLE")
+    print("=" * 80)
+    print(f"Fixed timeframes of vaccination campaign: Year 5, Year 10, Year 30")
+    print()
+    print(f"Program definition:")
+    print(f"  No vaccination program          |  Vaccination Option 1")
+    print(f"  Single/one time vaccination     |  vaccination program")
+    print(f"  0% vaccination coverage         |  Varying vaccination coverage")
+    print(f"  25% human exposures receive PEP |  50% human exposures receive PEP")
+    print(f"  0% female dogs spayed annually  |  0% female dogs spayed annually")
+    print(f"  0% male dogs neutered annually  |  0% male dogs neutered annually")
+    print()
+    print(f"Rate of suspect human rabies exposures (per 100,000 persons) in year 1:")
+    print(f"  No vaccination program: {year1_no_vacc_suspect_rate:.2f}")
+    print(f"  Vaccination Option 1: {year1_vacc_suspect_rate:.2f}")
+    print()
+    
+    # Create summary table
+    print(f"{'Metric':<35} {'Time Period':<15} {'No Vacc Ann':<12} {'No Vacc Cum':<12} {'Vacc1 Ann':<12} {'Vacc1 Cum':<12}")
+    print("-" * 110)
+    
+    # For each time period, extract key metrics
+    for period in time_periods:
+        period_label = f"Year {period}"
+        
+        # Rabid dogs
+        no_vacc_rabid_ann = int(no_annual_summary.iloc[period]['Canine_rabies_annual'])
+        no_vacc_rabid_cum = int(no_annual_summary.iloc[period]['Canine_rabies_cumulative'])
+        vacc_rabid_ann = int(annual_summary.iloc[period]['Canine_rabies_annual'])
+        vacc_rabid_cum = int(annual_summary.iloc[period]['Canine_rabies_cumulative'])
+        
+        print(f"{'Rabid dogs':<35} {period_label:<15} {no_vacc_rabid_ann:<12,} {no_vacc_rabid_cum:<12,} {vacc_rabid_ann:<12,} {vacc_rabid_cum:<12,}")
+        
+        # Human deaths from dog rabies exposure
+        no_vacc_deaths_ann = int(no_annual_summary.iloc[period]['Human_rabies_annual'])
+        no_vacc_deaths_cum = int(no_annual_summary.iloc[period]['Human_rabies_cumulative'])
+        vacc_deaths_ann = int(annual_summary.iloc[period]['Human_rabies_annual'])
+        vacc_deaths_cum = int(annual_summary.iloc[period]['Human_rabies_cumulative'])
+        
+        print(f"{'Human deaths':<35} {period_label:<15} {no_vacc_deaths_ann:<12,} {no_vacc_deaths_cum:<12,} {vacc_deaths_ann:<12,} {vacc_deaths_cum:<12,}")
+        
+        # Program costs (undiscounted) - total of all cost components
+        no_vacc_cost_ann = int(no_annual_summary.iloc[period]['Vaccination_cost_annual'] + 
+                              no_annual_summary.iloc[period]['Suspect_exposure_cost_annual'] + 
+                              no_annual_summary.iloc[period]['PEP_cost_annual'])
+        no_vacc_cost_cum = int(no_annual_summary.iloc[period]['Vaccination_cost_cumulative'] + 
+                              no_annual_summary.iloc[period]['Suspect_exposure_cost_cumulative'] + 
+                              no_annual_summary.iloc[period]['PEP_cost_cumulative'])
+        vacc_cost_ann = int(annual_summary.iloc[period]['Vaccination_cost_annual'] + 
+                           annual_summary.iloc[period]['Suspect_exposure_cost_annual'] + 
+                           annual_summary.iloc[period]['PEP_cost_annual'])
+        vacc_cost_cum = int(annual_summary.iloc[period]['Vaccination_cost_cumulative'] + 
+                           annual_summary.iloc[period]['Suspect_exposure_cost_cumulative'] + 
+                           annual_summary.iloc[period]['PEP_cost_cumulative'])
+        
+        print(f"{'Program costs':<35} {period_label:<15} {no_vacc_cost_ann:<12,} {no_vacc_cost_cum:<12,} {vacc_cost_ann:<12,} {vacc_cost_cum:<12,}")
+        
+        # Calculate cost-effectiveness metrics for vaccination option only
+        deaths_averted_annual = no_vacc_deaths_ann - vacc_deaths_ann
+        deaths_averted_cumulative = no_vacc_deaths_cum - vacc_deaths_cum
+        
+        additional_cost_annual = vacc_cost_ann - no_vacc_cost_ann
+        additional_cost_cumulative = vacc_cost_cum - no_vacc_cost_cum
+        
+        # Cost per human death averted
+        cost_per_death_annual = int(additional_cost_annual / deaths_averted_annual) if deaths_averted_annual > 0 else 'N/A'
+        cost_per_death_cumulative = int(additional_cost_cumulative / deaths_averted_cumulative) if deaths_averted_cumulative > 0 else 'N/A'
+        
+        print(f"{'Cost per death averted':<35} {period_label:<15} {'N/A':<12} {'N/A':<12} {str(cost_per_death_annual):<12} {str(cost_per_death_cumulative):<12}")
+        
+        # Cost per DALY averted (using YLL)
+        dalys_averted_annual = deaths_averted_annual * YLL
+        dalys_averted_cumulative = deaths_averted_cumulative * YLL
+        
+        cost_per_daly_annual = int(additional_cost_annual / dalys_averted_annual) if dalys_averted_annual > 0 else 'N/A'
+        cost_per_daly_cumulative = int(additional_cost_cumulative / dalys_averted_cumulative) if dalys_averted_cumulative > 0 else 'N/A'
+        
+        print(f"{'Cost per DALY averted':<35} {period_label:<15} {'N/A':<12} {'N/A':<12} {str(cost_per_daly_annual):<12} {str(cost_per_daly_cumulative):<12}")
+        print()
+
+# Create and display the program summary
+create_program_summary_table()
+
+#excel_equivalent[["Year", "Cost_per_Death_Averted_Cum", "Cost_per_DALY_Averted_Cum"]]
 
 
 # Extract annual rabies data for both scenarios (years 1-30)
@@ -1024,3 +1376,5 @@ plt.subplots_adjust(bottom=0.1)
 plt.show()
 
 # ...existing code...
+
+
