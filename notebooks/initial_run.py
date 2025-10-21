@@ -1308,6 +1308,7 @@ def create_program_summary_table():
 # Create and display the program summary
 create_program_summary_table()
 
+
 #excel_equivalent[["Year", "Cost_per_Death_Averted_Cum", "Cost_per_DALY_Averted_Cum"]]
 
 

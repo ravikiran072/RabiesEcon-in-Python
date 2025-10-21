@@ -1,6 +1,23 @@
 # Rabies Economic Analysis
 
-A data science project for analyzing the economic impact of rabies prevention and control measures.
+A comprehensive data science project for analyzing the economic impact of rabies prevention and control measures. This project includes a fully integrated Streamlit application that performs complete economic analysis internally, from mathematical modeling to visualization generation.
+
+## 🚀 Quick Start - Comprehensive App
+
+To run the complete analysis application:
+
+```bash
+python run_app.py
+```
+
+This launches a comprehensive Streamlit app that:
+- Performs all mathematical modeling internally
+- Calculates economic metrics and cost-effectiveness
+- Generates the program summary table
+- Creates 2x2 visualization plots
+- Provides interactive results exploration
+
+See `app/COMPREHENSIVE_APP_README.md` for detailed information about the comprehensive application.
 
 ## Project Structure
 
