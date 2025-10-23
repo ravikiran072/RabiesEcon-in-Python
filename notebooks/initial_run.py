@@ -377,6 +377,9 @@ R0 = (sigma_d * r_d * beta_d * Sd) / (
 p_ExptoNoInf = 0.097  # Rates of not developing rabies from exposure (bites), per week
 p_ExptoInf = 0.025  # Rates of developing rabies from exposure (bites), per week
 
+# Add dog death tracking
+Dd = 0  # Dead dogs due to rabies
+
 # Initialize no_annual_vaccination dataframe
 no_annual_vaccination = pd.DataFrame(
     {
@@ -392,6 +395,7 @@ no_annual_vaccination = pd.DataFrame(
         "Eh": [Eh],
         "Ih": [Ih],
         "Dh": [Dh],
+        "Dd": [Dd],
         "Rh": [Rh],
         "Nh": [Nh],
         "new_expo": [new_expo],
@@ -412,6 +416,7 @@ results_no_annual = {
     "Eh": [Eh],
     "Ih": [Ih],
     "Dh": [Dh],
+    "Dd": [Dd],
     "Rh": [Rh],
     "Nh": [Nh],
     "new_expo": [new_expo],
@@ -517,6 +522,7 @@ for time in range(1, 2300):  #
     # Update all values
     Sd, Ed, Id, C_rd, Rd, Nd = Sd_new, Ed_new, Id_new, C_rd_new, Rd_new, Nd_new
     Sh, Eh, Ih, Dh, Rh, Nh = Sh_new, Eh_new, Ih_new, Dh_new, Rh_new, Nh_new
+    Dd = Dd + (mu_d * Id)  # Accumulate dog deaths from rabies
     new_expo = new_expo_new
 
     # Store results
@@ -532,6 +538,7 @@ for time in range(1, 2300):  #
     results_no_annual["Eh"].append(Eh)
     results_no_annual["Ih"].append(Ih)
     results_no_annual["Dh"].append(Dh)
+    results_no_annual["Dd"].append(Dd)
     results_no_annual["Rh"].append(Rh)
     results_no_annual["Nh"].append(Nh)
     results_no_annual["new_expo"].append(new_expo)
@@ -623,6 +630,7 @@ Eh = 0  # Exposed at t0
 Ih = 0  # Infectious/Rabid at t0
 Rh = 0  # Immune at t0
 Dh = 0
+Dd = 0  # Dead dogs due to rabies
 new_expo = Eh
 
 # Model parameters (updated)
@@ -698,6 +706,7 @@ annual_vaccination = pd.DataFrame(
         "Eh": [Eh],
         "Ih": [Ih],
         "Dh": [Dh],
+        "Dd": [Dd],
         "Rh": [Rh],
         "Nh": [Nh],
         "new_expo": [new_expo],
@@ -718,6 +727,7 @@ results = {
     "Eh": [Eh],
     "Ih": [Ih],
     "Dh": [Dh],
+    "Dd": [Dd],
     "Rh": [Rh],
     "Nh": [Nh],
     "new_expo": [new_expo],
@@ -827,6 +837,7 @@ for time in range(1, 2300):  # Changed from 2289 to 2300 to match Excel
     # Update all values
     Sd, Ed, Id, C_rd, Rd, Nd = Sd_new, Ed_new, Id_new, C_rd_new, Rd_new, Nd_new
     Sh, Eh, Ih, Dh, Rh, Nh = Sh_new, Eh_new, Ih_new, Dh_new, Rh_new, Nh_new
+    Dd = Dd + (mu_d * Id)  # Accumulate dog deaths from rabies
     new_expo = new_expo_new
 
     # Store results
@@ -842,6 +853,7 @@ for time in range(1, 2300):  # Changed from 2289 to 2300 to match Excel
     results["Eh"].append(Eh)
     results["Ih"].append(Ih)
     results["Dh"].append(Dh)
+    results["Dd"].append(Dd)
     results["Rh"].append(Rh)
     results["Nh"].append(Nh)
     results["new_expo"].append(new_expo)
@@ -925,6 +937,8 @@ def extract_summary_values(df, scenario_name, years = list(range(0,31))):
             human_population = 0
             human_rabies_cumulative = 0
             human_rabies_annual = 0  # Add human rabies annual
+            dog_deaths_cumulative = 0
+            dog_deaths_annual = 0
             exposure_cumulative = 0
             exposure_annual = 0
             suspect_exposure_cumulative = 0
@@ -948,6 +962,7 @@ def extract_summary_values(df, scenario_name, years = list(range(0,31))):
                 canine_rabies_cumulative = row_data["C_rd"] * Km2_of_program_area
                 human_population = row_data["Nh"] * Km2_of_program_area
                 human_rabies_cumulative = row_data["Dh"] * Km2_of_program_area
+                dog_deaths_cumulative = row_data["Dd"] * Km2_of_program_area
                 exposure_cumulative = row_data["Cu_new_expo"] * Km2_of_program_area
                 
                 # Calculate annual values
@@ -955,19 +970,23 @@ def extract_summary_values(df, scenario_name, years = list(range(0,31))):
                     exposure_annual = exposure_cumulative
                     canine_rabies_annual = canine_rabies_cumulative
                     human_rabies_annual = human_rabies_cumulative  # Add human rabies annual calculation
+                    dog_deaths_annual = dog_deaths_cumulative
                 else:
                     prev_time = (year - 1) * 52
                     if prev_time < len(df):
                         prev_exposure = df.iloc[prev_time]["Cu_new_expo"] * Km2_of_program_area
                         prev_canine_rabies = df.iloc[prev_time]["C_rd"] * Km2_of_program_area
                         prev_human_rabies = df.iloc[prev_time]["Dh"] * Km2_of_program_area  # Add previous human rabies
+                        prev_dog_deaths = df.iloc[prev_time]["Dd"] * Km2_of_program_area
                         exposure_annual = exposure_cumulative - prev_exposure
                         canine_rabies_annual = canine_rabies_cumulative - prev_canine_rabies
                         human_rabies_annual = human_rabies_cumulative - prev_human_rabies  # Calculate human rabies annual
+                        dog_deaths_annual = dog_deaths_cumulative - prev_dog_deaths
                     else:
                         exposure_annual = 0
                         canine_rabies_annual = 0
                         human_rabies_annual = 0  # Add human rabies annual
+                        dog_deaths_annual = 0
             else:
                 # If time step exceeds data length, use last available values
                 canine_population = 0
@@ -976,6 +995,8 @@ def extract_summary_values(df, scenario_name, years = list(range(0,31))):
                 human_population = 0
                 human_rabies_cumulative = 0
                 human_rabies_annual = 0  # Add human rabies annual
+                dog_deaths_cumulative = 0
+                dog_deaths_annual = 0
                 exposure_cumulative = 0
                 exposure_annual = 0
                 suspect_exposure_cumulative = 0
@@ -1059,6 +1080,8 @@ def extract_summary_values(df, scenario_name, years = list(range(0,31))):
             'Human_population': human_population,
             'Human_rabies_cumulative': human_rabies_cumulative,
             'Human_rabies_annual': human_rabies_annual,  # Add human rabies annual to output
+            'Dog_deaths_cumulative': dog_deaths_cumulative,
+            'Dog_deaths_annual': dog_deaths_annual,
             'Exposure_cumulative': exposure_cumulative,
             'Exposure_annual': exposure_annual,
             'Suspect_exposure_cumulative': suspect_exposure_cumulative,
@@ -1096,6 +1119,10 @@ def create_excel_equivalent_summary():
         'Annual_Human_Deaths_Cum': annual_summary['Human_rabies_cumulative'].round(0),
         'No_Annual_Human_Deaths_Ann': no_annual_summary['Human_rabies_annual'].round(0),  # Add human rabies annual
         'Annual_Human_Deaths_Ann': annual_summary['Human_rabies_annual'].round(0),  # Add human rabies annual
+        'No_Annual_Dog_Deaths_Cum': no_annual_summary['Dog_deaths_cumulative'].round(0),
+        'Annual_Dog_Deaths_Cum': annual_summary['Dog_deaths_cumulative'].round(0),
+        'No_Annual_Dog_Deaths_Ann': no_annual_summary['Dog_deaths_annual'].round(0),
+        'Annual_Dog_Deaths_Ann': annual_summary['Dog_deaths_annual'].round(0),
         'No_Annual_Exposure_Cum': no_annual_summary['Exposure_cumulative'].round(0),
         'Annual_Exposure_Cum': annual_summary['Exposure_cumulative'].round(0),
         'No_Annual_Exposure_Ann': no_annual_summary['Exposure_annual'].round(0),
@@ -1265,6 +1292,14 @@ def create_program_summary_table():
         vacc_deaths_cum = int(annual_summary.iloc[period]['Human_rabies_cumulative'])
         
         print(f"{'Human deaths':<35} {period_label:<15} {no_vacc_deaths_ann:<12,} {no_vacc_deaths_cum:<12,} {vacc_deaths_ann:<12,} {vacc_deaths_cum:<12,}")
+        
+        # Dog deaths from rabies exposure
+        no_vacc_dog_deaths_ann = int(no_annual_summary.iloc[period]['Dog_deaths_annual'])
+        no_vacc_dog_deaths_cum = int(no_annual_summary.iloc[period]['Dog_deaths_cumulative'])
+        vacc_dog_deaths_ann = int(annual_summary.iloc[period]['Dog_deaths_annual'])
+        vacc_dog_deaths_cum = int(annual_summary.iloc[period]['Dog_deaths_cumulative'])
+        
+        print(f"{'Dog deaths from rabies':<35} {period_label:<15} {no_vacc_dog_deaths_ann:<12,} {no_vacc_dog_deaths_cum:<12,} {vacc_dog_deaths_ann:<12,} {vacc_dog_deaths_cum:<12,}")
         
         # Program costs (undiscounted) - total of all cost components
         no_vacc_cost_ann = int(no_annual_summary.iloc[period]['Vaccination_cost_annual'] + 
