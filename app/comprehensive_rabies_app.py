@@ -770,6 +770,94 @@ def create_visualization_plots(no_annual_summary, annual_summary):
     
     return fig
 
+def create_mortality_rate_plots(no_annual_summary, annual_summary):
+    """Create side-by-side plots for dog and human mortality rates"""
+    from matplotlib.ticker import FuncFormatter
+    
+    # Create figure with side-by-side subplots
+    fig, axes = plt.subplots(1, 2, figsize=(15, 6))
+    
+    # Get years data (skip year 0)
+    years = range(1, 31)
+    
+    # Left plot: Dog deaths as percentage of population
+    # Calculate dog deaths percentage
+    no_dog_deaths_pct = []
+    annual_dog_deaths_pct = []
+    
+    for year in years:
+        if year < len(no_annual_summary):
+            # Get dog population and deaths for this year
+            no_dog_pop = no_annual_summary.iloc[year]['Canine_population']
+            no_dog_deaths = no_annual_summary.iloc[year]['Dog_deaths_annual']
+            no_pct = (no_dog_deaths / no_dog_pop * 100) if no_dog_pop > 0 else 0
+            no_dog_deaths_pct.append(no_pct)
+            
+            annual_dog_pop = annual_summary.iloc[year]['Canine_population']
+            annual_dog_deaths = annual_summary.iloc[year]['Dog_deaths_annual']
+            annual_pct = (annual_dog_deaths / annual_dog_pop * 100) if annual_dog_pop > 0 else 0
+            annual_dog_deaths_pct.append(annual_pct)
+        else:
+            no_dog_deaths_pct.append(0)
+            annual_dog_deaths_pct.append(0)
+    
+    axes[0].plot(years, no_dog_deaths_pct, linewidth=2.5, color='red', 
+                 label='No vaccination campaign', marker='o', markersize=3)
+    axes[0].plot(years, annual_dog_deaths_pct, linewidth=2.5, color='green', 
+                 label='Annual vaccination campaign', marker='s', markersize=3)
+    axes[0].set_title('Dog Deaths Due to Rabies\n(% of Dog Population)', fontsize=12, fontweight='bold')
+    axes[0].set_xlabel('Year', fontsize=10)
+    axes[0].set_ylabel('Dog Deaths (%)', fontsize=10)
+    axes[0].grid(True, alpha=0.3)
+    axes[0].set_xlim(1, 30)
+    axes[0].tick_params(axis='both', which='major', labelsize=9)
+    axes[0].legend(loc='upper right', fontsize=9)
+    
+    # Format y-axis as percentage
+    def percentage_formatter(x, pos):
+        return f'{x:.3f}%'
+    axes[0].yaxis.set_major_formatter(FuncFormatter(percentage_formatter))
+    
+    # Right plot: Human deaths per 100,000 population
+    no_human_deaths_rate = []
+    annual_human_deaths_rate = []
+    
+    for year in years:
+        if year < len(no_annual_summary):
+            # Get human population and deaths for this year
+            no_human_pop = no_annual_summary.iloc[year]['Human_population']
+            no_human_deaths = no_annual_summary.iloc[year]['Human_rabies_annual']
+            no_rate = (no_human_deaths / no_human_pop * 100000) if no_human_pop > 0 else 0
+            no_human_deaths_rate.append(no_rate)
+            
+            annual_human_pop = annual_summary.iloc[year]['Human_population']
+            annual_human_deaths = annual_summary.iloc[year]['Human_rabies_annual']
+            annual_rate = (annual_human_deaths / annual_human_pop * 100000) if annual_human_pop > 0 else 0
+            annual_human_deaths_rate.append(annual_rate)
+        else:
+            no_human_deaths_rate.append(0)
+            annual_human_deaths_rate.append(0)
+    
+    axes[1].plot(years, no_human_deaths_rate, linewidth=2.5, color='red', 
+                 label='No vaccination campaign', marker='o', markersize=3)
+    axes[1].plot(years, annual_human_deaths_rate, linewidth=2.5, color='green', 
+                 label='Annual vaccination campaign', marker='s', markersize=3)
+    axes[1].set_title('Human Deaths Due to Rabies\n(per 100,000 Population)', fontsize=12, fontweight='bold')
+    axes[1].set_xlabel('Year', fontsize=10)
+    axes[1].set_ylabel('Deaths per 100,000', fontsize=10)
+    axes[1].grid(True, alpha=0.3)
+    axes[1].set_xlim(1, 30)
+    axes[1].tick_params(axis='both', which='major', labelsize=9)
+    axes[1].legend(loc='upper right', fontsize=9)
+    
+    # Format y-axis for rate
+    def rate_formatter(x, pos):
+        return f'{x:.2f}'
+    axes[1].yaxis.set_major_formatter(FuncFormatter(rate_formatter))
+    
+    plt.tight_layout()
+    return fig
+
 # Main Streamlit App
 def main():
     st.title("🐕 Rabies Economic Analysis Model")
@@ -1065,6 +1153,13 @@ def main():
             fig = create_visualization_plots(no_annual_summary, annual_summary)
             st.pyplot(fig)
             
+            # Mortality Rate Analysis
+            st.subheader("Mortality Rate Analysis")
+            
+            # Create and display mortality rate plots
+            fig_mortality = create_mortality_rate_plots(no_annual_summary, annual_summary)
+            st.pyplot(fig_mortality)
+            
             # Additional insights
             st.subheader("Visualization Insights")
             
@@ -1084,6 +1179,28 @@ def main():
                 - Human deaths closely track canine rabies patterns
                 - Vaccination prevents hundreds of deaths over 30 years
                 - Early intervention provides maximum benefit
+                """)
+            
+            # Mortality Rate Insights
+            st.markdown("---")
+            st.subheader("Mortality Rate Analysis Insights")
+            
+            col3, col4 = st.columns(2)
+            
+            with col3:
+                st.markdown("""
+                **Dog Mortality Rates:**
+                - Shows percentage of dog population lost to rabies annually
+                - Vaccination dramatically reduces dog mortality rates
+                - Population-level impact becomes clear over time
+                """)
+            
+            with col4:
+                st.markdown("""
+                **Human Mortality per 100,000:**
+                - Standardized rate allows comparison across populations
+                - Shows epidemiological impact at population level
+                - Demonstrates public health benefit of vaccination programs
                 """)
 
 if __name__ == "__main__":

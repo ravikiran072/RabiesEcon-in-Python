@@ -1411,6 +1411,52 @@ plt.tight_layout()
 plt.subplots_adjust(bottom=0.1)
 plt.show()
 
-# ...existing code...
 
 
+# Create side-by-side graphs for dog and human deaths as percentages/rates
+fig, axes = plt.subplots(1, 2, figsize=(15, 6))
+
+# Left plot: Dog deaths as % of total dog population
+no_annual_dog_deaths_pct = (no_annual_filtered["Dog_deaths_annual"] / no_annual_filtered["Canine_population"]) * 100
+annual_dog_deaths_pct = (annual_filtered["Dog_deaths_annual"] / annual_filtered["Canine_population"]) * 100
+
+axes[0].plot(no_annual_filtered["Year"], no_annual_dog_deaths_pct, 
+             linewidth=3, color='red', label='No vaccination campaign')
+axes[0].plot(annual_filtered["Year"], annual_dog_deaths_pct, 
+             linewidth=3, color='green', label='Annual vaccination campaign')
+
+axes[0].set_title("Dog deaths due to rabies (annual)\nas % of total dog population", fontsize=14, fontweight='bold')
+axes[0].set_xlabel("Year", fontsize=12)
+axes[0].set_ylabel("Dog deaths (% of total dog population)", fontsize=12)
+axes[0].grid(True, alpha=0.3)
+axes[0].set_xlim(1, 30)
+axes[0].legend(fontsize=10)
+
+# Format y-axis to show percentage with appropriate decimal places
+axes[0].yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.2f}%'.format(y)))
+
+# Right plot: Human deaths per 100,000 population
+no_annual_human_deaths_per_100k = (no_annual_filtered["Human_rabies_annual"] / no_annual_filtered["Human_population"]) * 100000
+annual_human_deaths_per_100k = (annual_filtered["Human_rabies_annual"] / annual_filtered["Human_population"]) * 100000
+
+axes[1].plot(no_annual_filtered["Year"], no_annual_human_deaths_per_100k, 
+             linewidth=3, color='red', label='No vaccination campaign')
+axes[1].plot(annual_filtered["Year"], annual_human_deaths_per_100k, 
+             linewidth=3, color='green', label='Annual vaccination campaign')
+
+axes[1].set_title("Human deaths due to rabies (annual)\nper 100,000 population", fontsize=14, fontweight='bold')
+axes[1].set_xlabel("Year", fontsize=12)
+axes[1].set_ylabel("Human deaths per 100,000 population", fontsize=12)
+axes[1].grid(True, alpha=0.3)
+axes[1].set_xlim(1, 30)
+axes[1].legend(fontsize=10)
+
+# Format y-axis to show appropriate decimal places
+axes[1].yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.1f}'.format(y)))
+
+# Adjust layout and show
+plt.tight_layout()
+plt.show()
+
+# Optional: Save the plot
+# plt.savefig('combined_deaths_percentage_rates.png', dpi=300, bbox_inches='tight')
