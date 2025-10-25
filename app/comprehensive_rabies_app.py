@@ -266,7 +266,17 @@ def create_coverage_data_editor(coverage_data):
     
     else:
         # Use original data from CSV
-        st.sidebar.info("📁 Using default CSV coverage data")
+        st.sidebar.info("""
+        📁 **Using default coverage data**
+        
+        
+        • **Status Quo Vaccination**: 5% (minimal/opportunistic)
+        
+        • **Annual Vaccination Program**: 20% (basic program)
+        
+        • **PEP Coverage**: 25% (Status Quo) / 50% (Annual Program)
+        
+        """)
         return coverage_data
 
 def get_vaccination_coverage(year, scenario="annual_vaccination", coverage_data=None):
@@ -373,40 +383,119 @@ def create_parameter_inputs(model_parameters):
         # VARIABLE PARAMETERS (from sheet: variable type)
         st.markdown("**📍 Geographic & Population Variables**")
         
-        Km2_of_program_area = st.number_input(
-            "Program Area (km²)",
-            min_value=1000.0,
-            max_value=100000.0,
-            value=float(defaults['Km2_of_program_area']),
-            step=1000.0,
-            help="Square kilometers (km2) of program area"
+        # Add country preset dropdown
+        country_presets = {
+            "Custom (Manual Entry)": {
+                "area": float(defaults['Km2_of_program_area']),
+                "population": int(defaults['Human_population']),
+                "hdr": float(defaults['Humans_per_free_roaming_dog']),
+                "adjustment": 1.05
+            },
+            "Kenya": {
+                "area": 54560.0,
+                "population": 41136000,
+                "hdr": 13.0,
+                "adjustment": 1.05
+            },
+            "Cameroon": {
+                "area": 12766.0,
+                "population": 841000,
+                "hdr": 16.0,
+                "adjustment": 1.05
+            },
+            "Malawi": {
+                "area": 17960.0,
+                "population": 15150000,
+                "hdr": 15.0,
+                "adjustment": 1.05
+            }
+        }
+        
+        selected_country = st.selectbox(
+            "Select Program Location",
+            options=list(country_presets.keys()),
+            index=0,  # Default to "Custom"
+            help="Choose a preset country or select 'Custom' to enter your own values"
         )
         
-        Human_population = st.number_input(
-            "Human Population",
-            min_value=100000,
-            max_value=100000000,
-            value=int(defaults['Human_population']),
-            step=100000,
-            help="Human population in the program area"
-        )
+        # Show country info if not custom
+        if selected_country != "Custom (Manual Entry)":
+            st.info(f"📍 **{selected_country}** preset selected - values auto-filled below")
         
-        Humans_per_free_roaming_dog = st.number_input(
-            "Humans per Free-Roaming Dog (HDR)",
-            min_value=1.0,
-            max_value=50.0,
-            value=float(defaults['Humans_per_free_roaming_dog']),
-            step=1.0,
-            help="Number of humans per FREE ROAMING dog (Human-to-Dog Ratio)"
-        )
+        # Use preset values or allow manual entry
+        if selected_country == "Custom (Manual Entry)":
+            # Manual entry fields
+            Km2_of_program_area = st.number_input(
+                "Program Area (km²)",
+                min_value=1000.0,
+                max_value=100000.0,
+                value=float(defaults['Km2_of_program_area']),
+                step=1000.0,
+                help="Square kilometers (km2) of program area"
+            )
+            
+            Human_population = st.number_input(
+                "Human Population",
+                min_value=100000,
+                max_value=100000000,
+                value=int(defaults['Human_population']),
+                step=100000,
+                help="Human population in the program area"
+            )
+            
+            Humans_per_free_roaming_dog = st.number_input(
+                "Humans per Free-Roaming Dog (HDR)",
+                min_value=1.0,
+                max_value=50.0,
+                value=float(defaults['Humans_per_free_roaming_dog']),
+                step=1.0,
+                help="Number of humans per FREE ROAMING dog (Human-to-Dog Ratio)"
+            )
+        else:
+            # Use preset values but allow override
+            preset = country_presets[selected_country]
+            
+            Km2_of_program_area = st.number_input(
+                "Program Area (km²)",
+                min_value=1000.0,
+                max_value=100000.0,
+                value=preset["area"],
+                step=1000.0,
+                help=f"Square kilometers for {selected_country} (you can modify this value)"
+            )
+            
+            Human_population = st.number_input(
+                "Human Population",
+                min_value=100000,
+                max_value=100000000,
+                value=preset["population"],
+                step=100000,
+                help=f"Human population for {selected_country} (you can modify this value)"
+            )
+            
+            Humans_per_free_roaming_dog = st.number_input(
+                "Humans per Free-Roaming Dog (HDR)",
+                min_value=1.0,
+                max_value=50.0,
+                value=preset["hdr"],
+                step=1.0,
+                help=f"HDR for {selected_country} (you can modify this value)"
+            )
         
-        # ADD DOG DENSITY ADJUSTMENT FACTOR HERE
+        # DOG DENSITY ADJUSTMENT FACTOR - separate section
         st.markdown("**🎯 Model Adjustment Parameters**")
+        
+        # Use preset or manual for adjustment factor
+        if selected_country == "Custom (Manual Entry)":
+            default_adjustment = 1.05
+        else:
+            default_adjustment = country_presets[selected_country]["adjustment"]
+        
         dog_density_adjustment_factor = st.selectbox(
             "Dog Density Adjustment Factor",
             options=[0.95, 1.0, 1.05],
-            index=2,  # Default to 1.05 (current value)
-            help="Adjustment factor for dog population density and carrying capacity (K). Controls dog population dynamics. 0.95=Lower density, 1.0=Neutral, 1.05=Higher density (current default)"
+            index=[0.95, 1.0, 1.05].index(default_adjustment),
+            help="Adjustment factor for dog population density and carrying capacity (K). Controls dog population dynamics. 0.95=Lower density, 1.0=Neutral, 1.05=Higher density"
         )
     
     with param_tab2:
@@ -703,7 +792,7 @@ def create_parameter_inputs(model_parameters):
     
     # Reset button
     if st.sidebar.button("🔄 Reset to Excel Defaults", type="secondary"):
-        st.experimental_rerun()
+        st.rerun()
     
     # Return the complete parameters dictionary matching the extract_model_parameters format
     return {
@@ -1465,17 +1554,18 @@ def main():
     
     st.success("✅ Data loaded successfully")
     
+    # Create interactive parameter inputs FIRST (so they appear at top of sidebar)
+    params = create_parameter_inputs(model_parameters)
+    
     # Create coverage data editor (this will modify coverage_data if custom data is used)
     coverage_data = create_coverage_data_editor(coverage_data)
-    
-    # Create interactive parameter inputs
-    params = create_parameter_inputs(model_parameters)
     
     # Add parameter summary in sidebar
     st.sidebar.markdown("---")
     st.sidebar.subheader("📊 Current Parameters")
     st.sidebar.metric("Program Area (km²)", f"{params['Km2_of_program_area']:,.0f}")
     st.sidebar.metric("Human Population", f"{params['Human_population']:,.0f}")
+    st.sidebar.metric("Humans per Free-Roaming Dog (HDR)", f"{params['Humans_per_free_roaming_dog']:.1f}")
     st.sidebar.metric("Dog Population", f"{params['Free_roaming_dog_population']:,.0f}")
     st.sidebar.metric("Dogs per km²", f"{params['Free_roaming_dogs_per_km2']:,.1f}")
     st.sidebar.metric("R₀ (Dog-to-Dog)", f"{params['R0_dog_to_dog']:.3f}")
@@ -1536,90 +1626,159 @@ def main():
         
         with tab1:
             st.header("Executive Summary")
+            st.markdown("### 📊 Impact Analysis by Vaccination Program Phase")
             
-            # Key metrics for year 10
-            col1, col2, col3, col4 = st.columns(4)
+            # Create phase-based summary
+            phases = [
+                {"name": "Phase I (Years 1-3)", "years": [1, 2, 3], "color": "#1e40af", "description": "Initial mass vaccination"},
+                {"name": "Phase II (Years 4-6)", "years": [4, 5, 6], "color": "#7c2d12", "description": "Intensified efforts"},
+                {"name": "Phase III (Years 7-13)", "years": [7, 8, 9, 10, 11, 12, 13], "color": "#065f46", "description": "High coverage maintenance"},
+                {"name": "Phase IV (Years 14-20)", "years": [14, 15, 16, 17, 18, 19, 20], "color": "#581c87", "description": "Post-elimination maintenance"}
+            ]
             
-            year_10_no_vacc = no_annual_summary.iloc[10]
-            year_10_vacc = annual_summary.iloc[10]
+            # Display phase results in tabs
+            phase_tabs = st.tabs([phase["name"] for phase in phases])
+            
+            for i, phase in enumerate(phases):
+                with phase_tabs[i]:
+                    st.markdown(f"**{phase['description']}**")
+                    
+                    # Calculate cumulative results for this phase
+                    phase_end_year = max(phase["years"])
+                    if phase_end_year <= len(no_annual_summary) - 1:
+                        year_no_vacc = no_annual_summary.iloc[phase_end_year]
+                        year_vacc = annual_summary.iloc[phase_end_year]
+                        
+                        # Create metrics for this phase
+                        col1, col2, col3, col4 = st.columns(4)
+                        
+                        with col1:
+                            deaths_averted = year_no_vacc['Human_rabies_cumulative'] - year_vacc['Human_rabies_cumulative']
+                            st.markdown(f"""
+                            <div style="background: linear-gradient(135deg, {phase['color']} 0%, {phase['color']}aa 100%); 
+                                       padding: 1.2rem; border-radius: 10px; text-align: center; 
+                                       box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin: 0.5rem 0;">
+                                <h4 style="color: #e0e7ff; margin: 0; font-size: 0.9rem; font-weight: 600;">Deaths Averted</h4>
+                                <h2 style="color: white; margin: 0.5rem 0; font-size: 1.8rem; font-weight: bold;">{deaths_averted:.0f}</h2>
+                                <p style="color: #86efac; margin: 0; font-size: 0.8rem;">Cumulative by Year {phase_end_year}</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
+                        with col2:
+                            cost_diff = (year_vacc['Vaccination_cost_cumulative'] + 
+                                       year_vacc['Suspect_exposure_cost_cumulative'] + 
+                                       year_vacc['PEP_cost_cumulative']) - \
+                                      (year_no_vacc['Vaccination_cost_cumulative'] + 
+                                       year_no_vacc['Suspect_exposure_cost_cumulative'] + 
+                                       year_no_vacc['PEP_cost_cumulative'])
+                            st.markdown(f"""
+                            <div style="background: linear-gradient(135deg, #dc2626 0%, #dc2626aa 100%); 
+                                       padding: 1.2rem; border-radius: 10px; text-align: center; 
+                                       box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin: 0.5rem 0;">
+                                <h4 style="color: #fecaca; margin: 0; font-size: 0.9rem; font-weight: 600;">Additional Cost</h4>
+                                <h2 style="color: white; margin: 0.5rem 0; font-size: 1.8rem; font-weight: bold;">${cost_diff:,.0f}</h2>
+                                <p style="color: #fbbf24; margin: 0; font-size: 0.8rem;">Investment required</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
+                        with col3:
+                            cost_per_death = cost_diff / deaths_averted if deaths_averted > 0 else 0
+                            st.markdown(f"""
+                            <div style="background: linear-gradient(135deg, #059669 0%, #059669aa 100%); 
+                                       padding: 1.2rem; border-radius: 10px; text-align: center; 
+                                       box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin: 0.5rem 0;">
+                                <h4 style="color: #a7f3d0; margin: 0; font-size: 0.9rem; font-weight: 600;">Cost per Death Averted</h4>
+                                <h2 style="color: white; margin: 0.5rem 0; font-size: 1.8rem; font-weight: bold;">${cost_per_death:,.0f}</h2>
+                                <p style="color: #86efac; margin: 0; font-size: 0.8rem;">Cost-effectiveness</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
+                        with col4:
+                            dalys_averted = deaths_averted * params['YLL']
+                            cost_per_daly = cost_diff / dalys_averted if dalys_averted > 0 else 0
+                            st.markdown(f"""
+                            <div style="background: linear-gradient(135deg, #7c3aed 0%, #7c3aedaa 100%); 
+                                       padding: 1.2rem; border-radius: 10px; text-align: center; 
+                                       box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin: 0.5rem 0;">
+                                <h4 style="color: #ddd6fe; margin: 0; font-size: 0.9rem; font-weight: 600;">Cost per DALY Averted</h4>
+                                <h2 style="color: white; margin: 0.5rem 0; font-size: 1.8rem; font-weight: bold;">${cost_per_daly:,.0f}</h2>
+                                <p style="color: #c084fc; margin: 0; font-size: 0.8rem;">WHO threshold comparison</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
+                        # Phase-specific insights
+                        st.markdown("#### Phase Insights")
+                        
+                        if i == 0:  # Phase I
+                            st.info("""
+                            🎯 **Phase I Focus**: Initial mass vaccination establishes baseline immunity
+                            - Foundation period for building dog population immunity
+                            - Higher costs as program infrastructure is established
+                            - Early impact on reducing rabies transmission
+                            """)
+                        elif i == 1:  # Phase II
+                            st.warning("""
+                            ⚡ **Phase II Focus**: Intensified efforts to reach elimination targets
+                            - Critical period for achieving high vaccination coverage
+                            - Significant reduction in human rabies cases begins
+                            - Cost-effectiveness improves as coverage increases
+                            """)
+                        elif i == 2:  # Phase III
+                            st.success("""
+                            🏆 **Phase III Focus**: High coverage maintenance and elimination approach
+                            - Optimal period for rabies elimination in dog populations
+                            - Maximum public health impact achieved
+                            - Best cost-effectiveness ratios typically seen
+                            """)
+                        else:  # Phase IV
+                            st.info("""
+                            🛡️ **Phase IV Focus**: Post-elimination maintenance and surveillance
+                            - Sustained low-level vaccination to prevent reintroduction
+                            - Minimal human cases, focus on maintaining elimination
+                            - Long-term cost savings from reduced PEP needs
+                            """)
+                    else:
+                        st.warning(f"Data not available for {phase['name']} (extends beyond simulation period)")
+            
+            # Overall program summary
+            st.markdown("---")
+            st.subheader("🎯 Overall Program Impact (30 Years)")
+            
+            # Final year comparison
+            final_year = len(no_annual_summary) - 1
+            final_no_vacc = no_annual_summary.iloc[final_year]
+            final_vacc = annual_summary.iloc[final_year]
+            
+            col1, col2, col3 = st.columns(3)
             
             with col1:
-                deaths_averted_10 = year_10_no_vacc['Human_rabies_cumulative'] - year_10_vacc['Human_rabies_cumulative']
-                # Custom styled metric box
-                st.markdown(f"""
-                <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); 
-                           padding: 1.2rem; border-radius: 10px; text-align: center; 
-                           box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin: 0.5rem 0;">
-                    <h4 style="color: #e0e7ff; margin: 0; font-size: 0.9rem; font-weight: 600;">Deaths Averted (10 years)</h4>
-                    <h2 style="color: white; margin: 0.5rem 0; font-size: 1.8rem; font-weight: bold;">{deaths_averted_10:.0f}</h2>
-                    <p style="color: #86efac; margin: 0; font-size: 0.8rem;">{deaths_averted_10:.0f} lives saved</p>
-                </div>
-                """, unsafe_allow_html=True)
+                total_deaths_averted = final_no_vacc['Human_rabies_cumulative'] - final_vacc['Human_rabies_cumulative']
+                st.metric(
+                    "Total Deaths Averted", 
+                    f"{total_deaths_averted:,.0f}", 
+                    f"{total_deaths_averted:,.0f} lives saved over 30 years"
+                )
             
             with col2:
-                cost_diff_10 = (year_10_vacc['Vaccination_cost_cumulative'] + 
-                               year_10_vacc['Suspect_exposure_cost_cumulative'] + 
-                               year_10_vacc['PEP_cost_cumulative']) - \
-                              (year_10_no_vacc['Vaccination_cost_cumulative'] + 
-                               year_10_no_vacc['Suspect_exposure_cost_cumulative'] + 
-                               year_10_no_vacc['PEP_cost_cumulative'])
-                st.markdown(f"""
-                <div style="background: linear-gradient(135deg, #7c2d12 0%, #dc2626 100%); 
-                           padding: 1.2rem; border-radius: 10px; text-align: center; 
-                           box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin: 0.5rem 0;">
-                    <h4 style="color: #fecaca; margin: 0; font-size: 0.9rem; font-weight: 600;">Additional Cost (10 years)</h4>
-                    <h2 style="color: white; margin: 0.5rem 0; font-size: 1.8rem; font-weight: bold;">${cost_diff_10:,.0f}</h2>
-                    <p style="color: #fbbf24; margin: 0; font-size: 0.8rem;">Investment required</p>
-                </div>
-                """, unsafe_allow_html=True)
+                total_cost_diff = (final_vacc['Vaccination_cost_cumulative'] + 
+                                 final_vacc['Suspect_exposure_cost_cumulative'] + 
+                                 final_vacc['PEP_cost_cumulative']) - \
+                                (final_no_vacc['Vaccination_cost_cumulative'] + 
+                                 final_no_vacc['Suspect_exposure_cost_cumulative'] + 
+                                 final_no_vacc['PEP_cost_cumulative'])
+                st.metric(
+                    "Total Additional Investment", 
+                    f"${total_cost_diff:,.0f}", 
+                    "Total program cost over 30 years"
+                )
             
             with col3:
-                cost_per_death_10 = cost_diff_10 / deaths_averted_10 if deaths_averted_10 > 0 else 0
-                st.markdown(f"""
-                <div style="background: linear-gradient(135deg, #065f46 0%, #059669 100%); 
-                           padding: 1.2rem; border-radius: 10px; text-align: center; 
-                           box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin: 0.5rem 0;">
-                    <h4 style="color: #a7f3d0; margin: 0; font-size: 0.9rem; font-weight: 600;">Cost per Death Averted</h4>
-                    <h2 style="color: white; margin: 0.5rem 0; font-size: 1.8rem; font-weight: bold;">${cost_per_death_10:,.0f}</h2>
-                    <p style="color: #86efac; margin: 0; font-size: 0.8rem;">Cost-effectiveness</p>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            with col4:
-                dalys_averted_10 = deaths_averted_10 * params['YLL']
-                cost_per_daly_10 = cost_diff_10 / dalys_averted_10 if dalys_averted_10 > 0 else 0
-                st.markdown(f"""
-                <div style="background: linear-gradient(135deg, #581c87 0%, #7c3aed 100%); 
-                           padding: 1.2rem; border-radius: 10px; text-align: center; 
-                           box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin: 0.5rem 0;">
-                    <h4 style="color: #ddd6fe; margin: 0; font-size: 0.9rem; font-weight: 600;">Cost per DALY Averted</h4>
-                    <h2 style="color: white; margin: 0.5rem 0; font-size: 1.8rem; font-weight: bold;">${cost_per_daly_10:,.0f}</h2>
-                    <p style="color: #c084fc; margin: 0; font-size: 0.8rem;">WHO threshold comparison</p>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            # Key findings
-            st.subheader("Key Findings")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown("""
-                **Impact of Vaccination Program:**
-                - Significantly reduces rabies transmission in dog populations
-                - Prevents human deaths through reduced exposure risk
-                - Creates herd immunity effects over time
-                - Reduces PEP treatment needs as rabies is eliminated
-                """)
-            
-            with col2:
-                st.markdown("""
-                **Economic Benefits:**
-                - Cost per DALY averted is highly favorable
-                - Long-term cost savings from reduced PEP treatments
-                - Averted productivity losses from prevented deaths
-                - Reduced surveillance and outbreak response costs
-                """)
+                overall_cost_per_death = total_cost_diff / total_deaths_averted if total_deaths_averted > 0 else 0
+                st.metric(
+                    "Overall Cost-Effectiveness", 
+                    f"${overall_cost_per_death:,.0f}", 
+                    "Per death averted (30-year program)"
+                )
             
             # Add visualization plots to Executive Summary
             st.subheader("📈 Impact Visualization")
@@ -1771,49 +1930,6 @@ def main():
             # Create and display mortality rate plots
             fig_mortality = create_mortality_rate_plots(no_annual_summary, annual_summary)
             st.pyplot(fig_mortality)
-            
-            # Additional insights
-            st.subheader("Visualization Insights")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown("""
-                **Canine Rabies Trends:**
-                - Annual vaccination dramatically reduces rabies cases
-                - Cumulative impact shows exponential divergence
-                - Herd immunity effects become apparent after year 5
-                """)
-            
-            with col2:
-                st.markdown("""
-                **Human Impact:**
-                - Human deaths closely track canine rabies patterns
-                - Vaccination prevents hundreds of deaths over 30 years
-                - Early intervention provides maximum benefit
-                """)
-            
-            # Mortality Rate Insights
-            st.markdown("---")
-            st.subheader("Mortality Rate Analysis Insights")
-            
-            col3, col4 = st.columns(2)
-            
-            with col3:
-                st.markdown("""
-                **Dog Mortality Rates:**
-                - Shows percentage of dog population lost to rabies annually
-                - Vaccination dramatically reduces dog mortality rates
-                - Population-level impact becomes clear over time
-                """)
-            
-            with col4:
-                st.markdown("""
-                **Human Mortality per 100,000:**
-                - Standardized rate allows comparison across populations
-                - Shows epidemiological impact at population level
-                - Demonstrates public health benefit of vaccination programs
-                """)
 
 if __name__ == "__main__":
     main()
