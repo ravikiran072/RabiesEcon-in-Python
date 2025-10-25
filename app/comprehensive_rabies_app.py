@@ -73,6 +73,202 @@ def load_data():
         st.error(f"Error loading data files: {e}")
         st.stop()
 
+def create_coverage_data_editor(coverage_data):
+    """Create interactive coverage data editor with phased approach"""
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("📋 Coverage Data Configuration")
+    
+    # Option to use default data or create custom
+    use_custom_data = st.sidebar.checkbox("Use Custom Coverage Data", value=False)
+    
+    if use_custom_data:
+        st.sidebar.info("💡 Configure coverage rates by vaccination program phase")
+        
+        # Create tabs for different coverage types
+        cov_tab1, cov_tab2 = st.sidebar.tabs(["🐕 Vaccination", "💉 PEP"])
+        
+        with cov_tab1:
+            st.markdown("**Vaccination Coverage by Phase**")
+            
+            # Mass Vaccination Phases
+            st.markdown("*Mass Vax: Phase I (Years 1-3):*")
+            vacc_no_annual_phase1 = st.slider("No Annual Vaccination (Phase I)", 0.0, 1.0, 0.10, 0.01, key="vacc_no_p1")
+            vacc_annual_phase1 = st.slider("Annual Vaccination (Phase I)", 0.0, 1.0, 0.30, 0.01, key="vacc_ann_p1")
+            
+            st.markdown("*Mass Vax: Phase II (Years 4-6):*")
+            vacc_no_annual_phase2 = st.slider("No Annual Vaccination (Phase II)", 0.0, 1.0, 0.10, 0.01, key="vacc_no_p2")
+            vacc_annual_phase2 = st.slider("Annual Vaccination (Phase II)", 0.0, 1.0, 0.50, 0.01, key="vacc_ann_p2")
+            
+            st.markdown("*Mass Vax: Phase III (Years 7-13):*")
+            vacc_no_annual_phase3 = st.slider("No Annual Vaccination (Phase III)", 0.0, 1.0, 0.10, 0.01, key="vacc_no_p3")
+            vacc_annual_phase3 = st.slider("Annual Vaccination (Phase III)", 0.0, 1.0, 0.70, 0.01, key="vacc_ann_p3")
+            
+            st.markdown("*Mass Vax: Phase IV (Years 14-30):*")
+            vacc_no_annual_phase4 = st.slider("No Annual Vaccination (Phase IV)", 0.0, 1.0, 0.10, 0.01, key="vacc_no_p4")
+            vacc_annual_phase4 = st.slider("Annual Vaccination (Phase IV - Maintenance)", 0.0, 1.0, 0.80, 0.01, key="vacc_ann_p4")
+        
+        with cov_tab2:
+            st.markdown("**PEP Coverage by Phase**")
+            
+            st.markdown("*Phase I (Years 1-3):*")
+            pep_no_annual_phase1 = st.slider("PEP No Annual (Phase I)", 0.0, 1.0, 0.25, 0.01, key="pep_no_p1")
+            pep_annual_phase1 = st.slider("PEP Annual (Phase I)", 0.0, 1.0, 0.40, 0.01, key="pep_ann_p1")
+            
+            st.markdown("*Phase II (Years 4-6):*")
+            pep_no_annual_phase2 = st.slider("PEP No Annual (Phase II)", 0.0, 1.0, 0.25, 0.01, key="pep_no_p2")
+            pep_annual_phase2 = st.slider("PEP Annual (Phase II)", 0.0, 1.0, 0.50, 0.01, key="pep_ann_p2")
+            
+            st.markdown("*Phase III (Years 7-13):*")
+            pep_no_annual_phase3 = st.slider("PEP No Annual (Phase III)", 0.0, 1.0, 0.25, 0.01, key="pep_no_p3")
+            pep_annual_phase3 = st.slider("PEP Annual (Phase III)", 0.0, 1.0, 0.65, 0.01, key="pep_ann_p3")
+            
+            st.markdown("*Phase IV (Years 14-30):*")
+            pep_no_annual_phase4 = st.slider("PEP No Annual (Phase IV)", 0.0, 1.0, 0.25, 0.01, key="pep_no_p4")
+            pep_annual_phase4 = st.slider("PEP Annual (Phase IV - Maintenance)", 0.0, 1.0, 0.75, 0.01, key="pep_ann_p4")
+        
+        # Generate custom coverage data based on phases
+        custom_coverage_data = []
+        
+        for year in range(1, 31):
+            # Determine phase based on year
+            if 1 <= year <= 3:  # Phase I
+                no_annual_vacc = vacc_no_annual_phase1
+                annual_vacc = vacc_annual_phase1
+                no_annual_pep = pep_no_annual_phase1
+                annual_pep = pep_annual_phase1
+            elif 4 <= year <= 6:  # Phase II
+                no_annual_vacc = vacc_no_annual_phase2
+                annual_vacc = vacc_annual_phase2
+                no_annual_pep = pep_no_annual_phase2
+                annual_pep = pep_annual_phase2
+            elif 7 <= year <= 13:  # Phase III
+                no_annual_vacc = vacc_no_annual_phase3
+                annual_vacc = vacc_annual_phase3
+                no_annual_pep = pep_no_annual_phase3
+                annual_pep = pep_annual_phase3
+            else:  # Phase IV (Years 14-30)
+                no_annual_vacc = vacc_no_annual_phase4
+                annual_vacc = vacc_annual_phase4
+                no_annual_pep = pep_no_annual_phase4
+                annual_pep = pep_annual_phase4
+            
+            custom_coverage_data.append({
+                'year': year,
+                'no_annual_vaccination_coverage': no_annual_vacc,
+                'annual_vaccination_coverage': annual_vacc,
+                'no_annual_p_PEP_Exposed': no_annual_pep,
+                'annual_p_PEP_Exposed': annual_pep
+            })
+        
+        # Show preview of generated data
+        st.sidebar.markdown("---")
+        if st.sidebar.button("📊 Preview Coverage Data"):
+            custom_df = pd.DataFrame(custom_coverage_data)
+            
+            # Create preview in main area
+            st.header("📊 Coverage Data Preview")
+            
+            # Phase information
+            st.info("""
+            **Vaccination Program Phases:**
+            - **Phase I (Years 1-3):** Initial mass vaccination campaign
+            - **Phase II (Years 4-6):** Intensified vaccination efforts  
+            - **Phase III (Years 7-13):** High coverage maintenance
+            - **Phase IV (Years 14-30):** Post-elimination maintenance
+            """)
+            
+            # Create preview chart
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+            
+            # Vaccination coverage plot
+            ax1.plot(custom_df['year'], custom_df['no_annual_vaccination_coverage'], 
+                     label='No Annual Vaccination', color='red', linewidth=2.5, marker='o', markersize=4)
+            ax1.plot(custom_df['year'], custom_df['annual_vaccination_coverage'], 
+                     label='Annual Vaccination', color='green', linewidth=2.5, marker='s', markersize=4)
+            
+            # Add phase boundaries
+            ax1.axvline(x=3.5, color='gray', linestyle='--', alpha=0.7, linewidth=1)
+            ax1.axvline(x=6.5, color='gray', linestyle='--', alpha=0.7, linewidth=1)
+            ax1.axvline(x=13.5, color='gray', linestyle='--', alpha=0.7, linewidth=1)
+            
+            # Add phase labels
+            ax1.text(2, 0.9, 'Phase I', ha='center', va='center', bbox=dict(boxstyle="round,pad=0.3", facecolor="lightblue", alpha=0.7))
+            ax1.text(5, 0.9, 'Phase II', ha='center', va='center', bbox=dict(boxstyle="round,pad=0.3", facecolor="lightgreen", alpha=0.7))
+            ax1.text(10, 0.9, 'Phase III', ha='center', va='center', bbox=dict(boxstyle="round,pad=0.3", facecolor="lightyellow", alpha=0.7))
+            ax1.text(22, 0.9, 'Phase IV', ha='center', va='center', bbox=dict(boxstyle="round,pad=0.3", facecolor="lightcoral", alpha=0.7))
+            
+            ax1.set_title('Vaccination Coverage by Program Phase', fontsize=12, fontweight='bold')
+            ax1.set_xlabel('Year')
+            ax1.set_ylabel('Coverage Rate')
+            ax1.legend()
+            ax1.grid(True, alpha=0.3)
+            ax1.set_xlim(1, 30)
+            ax1.set_ylim(0, 1)
+            
+            # PEP coverage plot
+            ax2.plot(custom_df['year'], custom_df['no_annual_p_PEP_Exposed'], 
+                     label='No Annual Vaccination', color='red', linewidth=2.5, marker='o', markersize=4)
+            ax2.plot(custom_df['year'], custom_df['annual_p_PEP_Exposed'], 
+                     label='Annual Vaccination', color='green', linewidth=2.5, marker='s', markersize=4)
+            
+            # Add phase boundaries
+            ax2.axvline(x=3.5, color='gray', linestyle='--', alpha=0.7, linewidth=1)
+            ax2.axvline(x=6.5, color='gray', linestyle='--', alpha=0.7, linewidth=1)
+            ax2.axvline(x=13.5, color='gray', linestyle='--', alpha=0.7, linewidth=1)
+            
+            # Add phase labels
+            ax2.text(2, 0.9, 'Phase I', ha='center', va='center', bbox=dict(boxstyle="round,pad=0.3", facecolor="lightblue", alpha=0.7))
+            ax2.text(5, 0.9, 'Phase II', ha='center', va='center', bbox=dict(boxstyle="round,pad=0.3", facecolor="lightgreen", alpha=0.7))
+            ax2.text(10, 0.9, 'Phase III', ha='center', va='center', bbox=dict(boxstyle="round,pad=0.3", facecolor="lightyellow", alpha=0.7))
+            ax2.text(22, 0.9, 'Phase IV', ha='center', va='center', bbox=dict(boxstyle="round,pad=0.3", facecolor="lightcoral", alpha=0.7))
+            
+            ax2.set_title('PEP Coverage by Program Phase', fontsize=12, fontweight='bold')
+            ax2.set_xlabel('Year')
+            ax2.set_ylabel('Coverage Rate')
+            ax2.legend()
+            ax2.grid(True, alpha=0.3)
+            ax2.set_xlim(1, 30)
+            ax2.set_ylim(0, 1)
+            
+            plt.tight_layout()
+            st.pyplot(fig)
+            
+            # Show data table with phase indicators
+            st.subheader("📋 Generated Coverage Data by Phase")
+            
+            # Add phase column for better visualization
+            display_df = custom_df.copy()
+            display_df['Phase'] = display_df['year'].apply(lambda x: 
+                'Phase I' if 1 <= x <= 3 else
+                'Phase II' if 4 <= x <= 6 else
+                'Phase III' if 7 <= x <= 13 else
+                'Phase IV'
+            )
+            
+            # Reorder columns
+            display_df = display_df[['year', 'Phase', 'no_annual_vaccination_coverage', 'annual_vaccination_coverage', 'no_annual_p_PEP_Exposed', 'annual_p_PEP_Exposed']]
+            
+            st.dataframe(
+                display_df,
+                column_config={
+                    "year": "Year",
+                    "Phase": "Program Phase",
+                    "no_annual_vaccination_coverage": st.column_config.NumberColumn("No Annual Vacc", format="%.2f"),
+                    "annual_vaccination_coverage": st.column_config.NumberColumn("Annual Vacc", format="%.2f"),
+                    "no_annual_p_PEP_Exposed": st.column_config.NumberColumn("No Annual PEP", format="%.2f"),
+                    "annual_p_PEP_Exposed": st.column_config.NumberColumn("Annual PEP", format="%.2f")
+                },
+                use_container_width=True,
+                hide_index=True
+            )
+        
+        return pd.DataFrame(custom_coverage_data)
+    
+    else:
+        # Use original data from CSV
+        st.sidebar.info("📁 Using default CSV coverage data")
+        return coverage_data
+
 def get_vaccination_coverage(year, scenario="annual_vaccination", coverage_data=None):
     """Get vaccination coverage for a specific year and scenario from CSV data"""
     if coverage_data is None:
@@ -160,6 +356,401 @@ def extract_model_parameters(model_parameters):
     
     return params
 
+def create_parameter_inputs(model_parameters):
+    """Create interactive parameter inputs in the sidebar based on parameter categories"""
+    st.sidebar.header("🎛️ Model Parameters")
+    
+    # Create tabs for different parameter categories
+    param_tab1, param_tab2, param_tab3 = st.sidebar.tabs(["📊 Variables", "⚙️ Constants", "🔢 Calculated"])
+    
+    with param_tab1:
+        st.subheader("Key Variables")
+        st.info("💡 These are the primary parameters you can modify for scenario analysis")
+        
+        # Load default values from Excel
+        defaults = extract_model_parameters(model_parameters)
+        
+        # VARIABLE PARAMETERS (from sheet: variable type)
+        st.markdown("**📍 Geographic & Population Variables**")
+        
+        Km2_of_program_area = st.number_input(
+            "Program Area (km²)",
+            min_value=1000.0,
+            max_value=100000.0,
+            value=float(defaults['Km2_of_program_area']),
+            step=1000.0,
+            help="Square kilometers (km2) of program area"
+        )
+        
+        Human_population = st.number_input(
+            "Human Population",
+            min_value=100000,
+            max_value=100000000,
+            value=int(defaults['Human_population']),
+            step=100000,
+            help="Human population in the program area"
+        )
+        
+        Humans_per_free_roaming_dog = st.number_input(
+            "Humans per Free-Roaming Dog (HDR)",
+            min_value=1.0,
+            max_value=50.0,
+            value=float(defaults['Humans_per_free_roaming_dog']),
+            step=1.0,
+            help="Number of humans per FREE ROAMING dog (Human-to-Dog Ratio)"
+        )
+        
+        # ADD DOG DENSITY ADJUSTMENT FACTOR HERE
+        st.markdown("**🎯 Model Adjustment Parameters**")
+        dog_density_adjustment_factor = st.selectbox(
+            "Dog Density Adjustment Factor",
+            options=[0.95, 1.0, 1.05],
+            index=2,  # Default to 1.05 (current value)
+            help="Adjustment factor for dog population density and carrying capacity (K). Controls dog population dynamics. 0.95=Lower density, 1.0=Neutral, 1.05=Higher density (current default)"
+        )
+    
+    with param_tab2:
+        st.subheader("Model Constants")
+        st.warning("⚠️ Advanced parameters. Modify only if you understand their epidemiological significance.")
+        
+        # CONSTANT PARAMETERS (from sheet: constant type)
+        
+        st.markdown("**👥 Demographic Constants**")
+        Human_birth = st.number_input(
+            "Human Birth Rate (per 1,000/year)",
+            min_value=5.0,
+            max_value=50.0,
+            value=float(defaults['Human_birth']),
+            step=1.0,
+            help="Human birth rate per 1,000 population (suggested 17)"
+        )
+        
+        Human_life_expectancy = st.number_input(
+            "Human Life Expectancy (years)",
+            min_value=40.0,
+            max_value=90.0,
+            value=float(defaults['Human_life_expectancy']),
+            step=1.0,
+            help="Human life expectancy in years"
+        )
+        
+        Dog_birth_rate_per_1000_dogs = st.number_input(
+            "Dog Birth Rate (per 1,000 dogs/year)",
+            min_value=100.0,
+            max_value=1000.0,
+            value=float(defaults['Dog_birth_rate_per_1000_dogs']),
+            step=10.0,
+            help="Dog birth rate per 1,000 dogs (suggested 750)"
+        )
+        
+        Dog_life_expectancy = st.number_input(
+            "Dog Life Expectancy (years)",
+            min_value=1.0,
+            max_value=10.0,
+            value=float(defaults['Dog_life_expectancy']),
+            step=0.1,
+            help="Dog life expectancy in years"
+        )
+        
+        st.markdown("**🦠 Transmission Risk Constants**")
+        Annual_dog_bite_risk = st.number_input(
+            "Annual Dog Bite Risk",
+            min_value=0.001,
+            max_value=0.1,
+            value=float(defaults['Annual_dog_bite_risk']),
+            step=0.001,
+            format="%.4f",
+            help="Annual dog bite risk (suggested 1% - 3%)"
+        )
+        
+        Probability_of_rabies_in_biting_dogs = st.number_input(
+            "Probability of Rabies in Biting Dogs",
+            min_value=0.0001,
+            max_value=0.5,
+            value=float(defaults['Probability_of_rabies_in_biting_dogs']),
+            step=0.001,
+            format="%.4f",
+            help="Probability of rabies in biting dogs (suggested 0.1% - 5%)"
+        )
+        
+        Probability_of_human_developing_rabies = st.number_input(
+            "Probability of Human Developing Rabies",
+            min_value=0.01,
+            max_value=1.0,
+            value=float(defaults['Probability_of_human_developing_rabies']),
+            step=0.01,
+            format="%.3f",
+            help="Probability of human developing rabies (suggested 17%)"
+        )
+        
+        Dog_Human_transmission_rate = st.number_input(
+            "Dog-Human Transmission Rate",
+            min_value=0.000001,
+            max_value=0.001,
+            value=float(defaults['Dog_Human_transmission_rate']),
+            step=0.000001,
+            format="%.8f",
+            help="Dog-Human transmission rate (suggested 0.000034)"
+        )
+        
+        st.markdown("**📈 Exposure & Economic Constants**")
+        inflation_factor_for_the_suspect_exposure = st.number_input(
+            "Suspect Exposure Inflation Factor",
+            min_value=1.0,
+            max_value=20.0,
+            value=float(defaults['inflation_factor_for_the_suspect_exposure']),
+            step=1.0,
+            help="Inflation factor for the suspect exposure (>=1)"
+        )
+        
+        post_elimination_pep_reduction = st.number_input(
+            "Post-Elimination PEP Reduction",
+            min_value=0.0,
+            max_value=0.9,
+            value=float(defaults['post_elimination_pep_reduction']),
+            step=0.05,
+            format="%.2f",
+            help="Post-Elimination PEP Reduction (%)"
+        )
+        
+        st.markdown("**💰 Cost Constants**")
+        vaccination_cost_per_dog = st.number_input(
+            "Vaccination Cost per Dog ($)",
+            min_value=0.5,
+            max_value=20.0,
+            value=float(defaults['vaccination_cost_per_dog']),
+            step=0.25,
+            help="Average cost per dog vaccinated"
+        )
+        
+        pep_and_other_costs = st.number_input(
+            "PEP and Other Costs ($)",
+            min_value=5.0,
+            max_value=100.0,
+            value=float(defaults['pep_and_other_costs']),
+            step=1.0,
+            help="PEP cost & Other Costs per exposure"
+        )
+        
+        pep_prob_no_campaign = st.number_input(
+            "PEP Probability (No Campaign)",
+            min_value=0.1,
+            max_value=1.0,
+            value=float(defaults['pep_prob_no_campaign']),
+            step=0.05,
+            format="%.2f",
+            help="Probability of receiving PEP, post-exposure (no Vaccination program)"
+        )
+        
+        pep_prob_annual_campaign = st.number_input(
+            "PEP Probability (Annual Campaign)",
+            min_value=0.1,
+            max_value=1.0,
+            value=float(defaults['pep_prob_annual_campaign']),
+            step=0.05,
+            format="%.2f",
+            help="Probability of receiving PEP, post-exposure (with Vaccination program)"
+        )
+        
+        YLL = st.number_input(
+            "Years of Life Lost (YLL)",
+            min_value=10.0,
+            max_value=50.0,
+            value=float(defaults['YLL']),
+            step=1.0,
+            help="Years of Life Lost (YLL) per death"
+        )
+        
+        # Additional cost parameters (if they exist in the model)
+        try:
+            quarantined_animal_prob = st.number_input(
+                "Quarantined Animal Probability",
+                min_value=0.0001,
+                max_value=0.01,
+                value=float(defaults.get('quarantined_animal_prob', 0.0008)),
+                step=0.0001,
+                format="%.5f"
+            )
+            
+            quarantined_animal_cost = st.number_input(
+                "Quarantined Animal Cost ($)",
+                min_value=50.0,
+                max_value=500.0,
+                value=float(defaults.get('quarantined_animal_cost', 140.0)),
+                step=10.0
+            )
+            
+            lab_test_prob = st.number_input(
+                "Lab Test Probability",
+                min_value=0.001,
+                max_value=0.1,
+                value=float(defaults.get('lab_test_prob', 0.011333333)),
+                step=0.001,
+                format="%.6f"
+            )
+            
+            lab_test_cost = st.number_input(
+                "Lab Test Cost ($)",
+                min_value=10.0,
+                max_value=100.0,
+                value=float(defaults.get('lab_test_cost', 26.49)),
+                step=1.0
+            )
+            
+            bite_investigation_prob = st.number_input(
+                "Bite Investigation Probability",
+                min_value=0.1,
+                max_value=1.0,
+                value=float(defaults.get('bite_investigation_prob', 0.466666667)),
+                step=0.01,
+                format="%.3f"
+            )
+            
+            bite_investigation_cost = st.number_input(
+                "Bite Investigation Cost ($)",
+                min_value=1.0,
+                max_value=20.0,
+                value=float(defaults.get('bite_investigation_cost', 3.25)),
+                step=0.25
+            )
+        except:
+            # Use defaults if not in Excel file
+            quarantined_animal_prob = 0.0008
+            quarantined_animal_cost = 140.0
+            lab_test_prob = 0.011333333
+            lab_test_cost = 26.49
+            bite_investigation_prob = 0.466666667
+            bite_investigation_cost = 3.25
+    
+    with param_tab3:
+        st.subheader("Calculated Values")
+        st.info("📊 These values are automatically calculated from your input parameters")
+        
+        # CALCULATED PARAMETERS (derived from inputs)
+        
+        # Calculate Free_roaming_dog_population from HDR (as per Excel: Human_population / Humans_per_free_roaming_dog)
+        Free_roaming_dog_population = Human_population / Humans_per_free_roaming_dog
+        
+        # Calculate geographic densities
+        Humans_per_km2 = Human_population / Km2_of_program_area
+        Free_roaming_dogs_per_km2 = Free_roaming_dog_population / Km2_of_program_area
+        
+        # Calculate R0_dog_to_dog (this would need the actual formula from your model)
+        # For now, using the Excel value as placeholder - you'll need to implement the actual calculation
+        R0_dog_to_dog = 1.38053211  # This should be calculated based on your epidemiological model
+        
+        st.markdown("**📊 Population Metrics**")
+        st.metric("Humans per km²", f"{Humans_per_km2:,.1f}")
+        st.metric("Free-roaming Dog Population", f"{Free_roaming_dog_population:,.0f}")
+        st.metric("Free-roaming Dogs per km²", f"{Free_roaming_dogs_per_km2:.2f}")
+        
+        st.markdown("**🦠 Disease Metrics**")
+        st.metric("R₀ (Dog-to-Dog)", f"{R0_dog_to_dog:.8f}")
+        
+        # Show K calculation with dog density adjustment factor
+        st.markdown("**🔧 Model Parameters**")
+        calculated_k = Free_roaming_dogs_per_km2 * (1 + 1 / np.log(Free_roaming_dog_population)) * dog_density_adjustment_factor
+        st.metric("Carrying Capacity (K)", f"{calculated_k:.6f}")
+        st.caption(f"K = Nd × (1 + 1/ln(Population)) × {dog_density_adjustment_factor}")
+        
+        st.markdown("**🔗 Transmission Verification**")
+        calculated_transmission_rate = Annual_dog_bite_risk * Probability_of_rabies_in_biting_dogs * Probability_of_human_developing_rabies
+        st.metric("Calculated Transmission Rate", f"{calculated_transmission_rate:.8f}")
+        st.metric("Manual Transmission Rate", f"{Dog_Human_transmission_rate:.8f}")
+        
+        if abs(calculated_transmission_rate - Dog_Human_transmission_rate) > 0.000001:
+            st.warning("⚠️ Manual transmission rate differs from calculated value!")
+    
+    # Parameter validation section
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🔍 Parameter Validation")
+    
+    # Calculate values for validation
+    Free_roaming_dog_population = Human_population / Humans_per_free_roaming_dog
+    Free_roaming_dogs_per_km2 = Free_roaming_dog_population / Km2_of_program_area
+    
+    validation_warnings = []
+    
+    # Basic validation checks
+    if Free_roaming_dogs_per_km2 > 100:
+        validation_warnings.append("⚠️ Very high dog density (>100/km²)")
+    if Free_roaming_dogs_per_km2 < 10:
+        validation_warnings.append("⚠️ Very low dog density (<10/km²)")
+    if vaccination_cost_per_dog > pep_and_other_costs:
+        validation_warnings.append("⚠️ Vaccination cost > PEP cost")
+    if Human_population / Km2_of_program_area < 10:
+        validation_warnings.append("⚠️ Very low population density")
+    if Humans_per_free_roaming_dog < 5:
+        validation_warnings.append("⚠️ Very high dog-to-human ratio")
+    if Humans_per_free_roaming_dog > 30:
+        validation_warnings.append("⚠️ Very low dog-to-human ratio")
+    
+    # Add Dog Density Adjustment Factor validation
+    if dog_density_adjustment_factor != 1.05:
+        if dog_density_adjustment_factor == 0.95:
+            validation_warnings.append("ℹ️ Using lower dog density (K×0.95)")
+        elif dog_density_adjustment_factor == 1.0:
+            validation_warnings.append("ℹ️ Using neutral dog density (K×1.0)")
+    
+    if validation_warnings:
+        for warning in validation_warnings:
+            if warning.startswith("ℹ️"):
+                st.sidebar.info(warning)
+            else:
+                st.sidebar.warning(warning)
+    else:
+        st.sidebar.success("✅ Parameters look reasonable")
+    
+    # Reset button
+    if st.sidebar.button("🔄 Reset to Excel Defaults", type="secondary"):
+        st.experimental_rerun()
+    
+    # Return the complete parameters dictionary matching the extract_model_parameters format
+    return {
+        # Geographic and population (variables)
+        'Km2_of_program_area': Km2_of_program_area,
+        'Human_population': Human_population,
+        'Humans_per_free_roaming_dog': Humans_per_free_roaming_dog,
+        
+        # Model adjustment parameters
+        'dog_density_adjustment_factor': dog_density_adjustment_factor,
+        
+        # Calculated values
+        'Free_roaming_dog_population': Free_roaming_dog_population,
+        'Free_roaming_dogs_per_km2': Free_roaming_dogs_per_km2,
+        'Humans_per_km2': Human_population / Km2_of_program_area,
+        'R0_dog_to_dog': R0_dog_to_dog,
+        
+        # Demographic constants
+        'Human_birth': Human_birth,
+        'Human_life_expectancy': Human_life_expectancy,
+        'Dog_birth_rate_per_1000_dogs': Dog_birth_rate_per_1000_dogs,
+        'Dog_life_expectancy': Dog_life_expectancy,
+        
+        # Disease transmission constants
+        'Annual_dog_bite_risk': Annual_dog_bite_risk,
+        'Probability_of_rabies_in_biting_dogs': Probability_of_rabies_in_biting_dogs,
+        'Probability_of_human_developing_rabies': Probability_of_human_developing_rabies,
+        'Dog_Human_transmission_rate': Dog_Human_transmission_rate,
+        
+        # Economic parameters
+        'inflation_factor_for_the_suspect_exposure': inflation_factor_for_the_suspect_exposure,
+        'post_elimination_pep_reduction': post_elimination_pep_reduction,
+        'vaccination_cost_per_dog': vaccination_cost_per_dog,
+        'pep_and_other_costs': pep_and_other_costs,
+        'pep_prob_no_campaign': pep_prob_no_campaign,
+        'pep_prob_annual_campaign': pep_prob_annual_campaign,
+        'YLL': YLL,
+        
+        # Additional cost parameters
+        'quarantined_animal_prob': quarantined_animal_prob,
+        'quarantined_animal_cost': quarantined_animal_cost,
+        'lab_test_prob': lab_test_prob,
+        'lab_test_cost': lab_test_cost,
+        'bite_investigation_prob': bite_investigation_prob,
+        'bite_investigation_cost': bite_investigation_cost
+    }
+
 def run_initial_simulation(params):
     """Run the initial equilibrium simulation"""
     # Extract parameters
@@ -172,6 +763,7 @@ def run_initial_simulation(params):
     Human_population = params['Human_population']
     Human_birth = params['Human_birth']
     Human_life_expectancy = params['Human_life_expectancy']
+    dog_density_adjustment_factor = params['dog_density_adjustment_factor']  # NEW: Extract Dog Density Adjustment Factor
     
     # Calculate derived parameters
     Humans_per_km2 = Human_population / Km2_of_program_area
@@ -194,7 +786,9 @@ def run_initial_simulation(params):
     mu_d = (1 / 10) * 7
     
     beta_d = (R0_dog_to_dog * (((sigma_d) + m_d) * (mu_d + m_d)) / (sigma_d * r_d * Sd))
-    K = Nd * (1 + 1 / np.log(Free_roaming_dog_population)) * 1.05
+    
+    # UPDATED: Use Dog Density Adjustment Factor
+    K = Nd * (1 + 1 / np.log(Free_roaming_dog_population)) * dog_density_adjustment_factor
     
     v_d = 0.95
     Vaccination_coverage_per_campaign = 0.05
@@ -272,6 +866,7 @@ def run_scenario_simulation(initial_run, params, coverage_data, scenario_type="n
     Dog_birth_rate_per_1000_dogs = params['Dog_birth_rate_per_1000_dogs']
     Dog_life_expectancy = params['Dog_life_expectancy']
     Free_roaming_dog_population = params['Free_roaming_dog_population']
+    dog_density_adjustment_factor = params['dog_density_adjustment_factor']  # NEW: Extract Dog Density Adjustment Factor
     
     Humans_per_km2 = Human_population / Km2_of_program_area
     
@@ -298,7 +893,8 @@ def run_scenario_simulation(initial_run, params, coverage_data, scenario_type="n
     # Calculate beta_d and K from initial run
     R0_dog_to_dog = params['R0_dog_to_dog']
     beta_d = (R0_dog_to_dog * (((sigma_d) + m_d) * (mu_d + m_d)) / (sigma_d * r_d * initial_run.iloc[0]["Sd"]))
-    K = initial_run.iloc[0]["Nd"] * (1 + 1 / np.log(Free_roaming_dog_population)) * 1.05
+    # UPDATED: Use Dog Density Adjustment Factor
+    K = initial_run.iloc[0]["Nd"] * (1 + 1 / np.log(Free_roaming_dog_population)) * dog_density_adjustment_factor
     
     v_d = 0.95
     alpha_d1 = 0.0163
@@ -863,25 +1459,41 @@ def main():
     st.title("🐕 Rabies Economic Analysis Model")
     st.markdown("### Comprehensive Economic Impact Assessment of Rabies Vaccination Programs")
     
-    # Sidebar for parameters
-    st.sidebar.header("📊 Analysis Parameters")
-    
     # Load data
     with st.spinner("Loading model data..."):
         coverage_data, model_parameters = load_data()
-        params = extract_model_parameters(model_parameters)
     
-    st.sidebar.success("✅ Data loaded successfully")
+    st.success("✅ Data loaded successfully")
     
-    # Display key parameters
-    st.sidebar.subheader("Key Model Parameters")
+    # Create coverage data editor (this will modify coverage_data if custom data is used)
+    coverage_data = create_coverage_data_editor(coverage_data)
+    
+    # Create interactive parameter inputs
+    params = create_parameter_inputs(model_parameters)
+    
+    # Add parameter summary in sidebar
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("📊 Current Parameters")
     st.sidebar.metric("Program Area (km²)", f"{params['Km2_of_program_area']:,.0f}")
     st.sidebar.metric("Human Population", f"{params['Human_population']:,.0f}")
-    st.sidebar.metric("Dog Population/km²", f"{params['Free_roaming_dogs_per_km2']:,.1f}")
-    st.sidebar.metric("R₀ (Dog-to-Dog)", f"{params['R0_dog_to_dog']:.2f}")
+    st.sidebar.metric("Dog Population", f"{params['Free_roaming_dog_population']:,.0f}")
+    st.sidebar.metric("Dogs per km²", f"{params['Free_roaming_dogs_per_km2']:,.1f}")
+    st.sidebar.metric("R₀ (Dog-to-Dog)", f"{params['R0_dog_to_dog']:.3f}")
     
     # Run analysis button
+    st.sidebar.markdown("---")
     if st.sidebar.button("🚀 Run Analysis", type="primary"):
+        
+        # Validate critical parameters
+        if params['Km2_of_program_area'] <= 0:
+            st.error("❌ Program area must be greater than 0")
+            return
+        if params['Human_population'] <= 0:
+            st.error("❌ Human population must be greater than 0")
+            return
+        if params['Humans_per_free_roaming_dog'] <= 0:
+            st.error("❌ Humans per dog ratio must be greater than 0")
+            return
         
         # Progress bar
         progress_bar = st.progress(0)
