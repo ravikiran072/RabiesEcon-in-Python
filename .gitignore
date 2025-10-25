@@ -117,3 +117,11 @@ reports/*.pdf
 
 # extra_scripts
 /extra_scripts/
+
+# Archive folders (development files, old versions, unused code)
+archive/
+/archive/
+
+# Temporary Excel files
+*.tmp.xlsx
+~$*.xlsx

@@ -1,86 +1,111 @@
-# Rabies Economic Analysis
+# 🐕 Rabies Economic Analysis Model
 
-A comprehensive data science project for analyzing the economic impact of rabies prevention and control measures. This project includes a fully integrated Streamlit application that performs complete economic analysis internally, from mathematical modeling to visualization generation.
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://rabiesecon.streamlit.app)
 
-## 🚀 Quick Start - Comprehensive App
+A comprehensive economic impact assessment tool for rabies vaccination programs using epidemiological modeling and cost-benefit analysis.
 
-To run the complete analysis application:
+## 🚀 Quick Start
 
+### **Live Demo**
+👉 **[Try the App](https://rabiesecon.streamlit.app)** 
+
+### **Local Installation**
 ```bash
-python run_app.py
+git clone https://github.com/ravikiran072/RabiesEcon-in-Python.git
+cd RabiesEcon-in-Python
+pip install -r requirements.txt
+streamlit run app/comprehensive_rabies_app.py
 ```
 
-This launches a comprehensive Streamlit app that:
-- Performs all mathematical modeling internally
-- Calculates economic metrics and cost-effectiveness
-- Generates the program summary table
-- Creates 2x2 visualization plots
-- Provides interactive results exploration
+## 📊 Features
 
-See `app/COMPREHENSIVE_APP_README.md` for detailed information about the comprehensive application.
+### **🎯 Model Parameters**
+- **Geographic & Population Variables**: Program area, human/dog populations
+- **Dog Density Adjustment Factor**: Control carrying capacity (0.95, 1.0, 1.05)
+- **Economic Parameters**: Vaccination costs, PEP costs, YLL values
+- **Real-time Validation**: Parameter consistency checks
 
-## Project Structure
+### **📋 Coverage Data Configuration**
+- **Phased Vaccination Programs**:
+  - Phase I (Years 1-3): Initial mass vaccination
+  - Phase II (Years 4-6): Intensified efforts  
+  - Phase III (Years 7-13): High coverage maintenance
+  - Phase IV (Years 14-30): Post-elimination maintenance
+- **Custom Scenarios**: Interactive coverage rate configuration
+- **Visual Preview**: Real-time charts and data tables
+
+### **📈 Analysis Outputs**
+- **Executive Summary**: Key metrics and ROI analysis
+- **Program Comparison**: No vaccination vs. annual vaccination
+- **Detailed Results**: Year-by-year breakdowns
+- **Interactive Visualizations**: Population dynamics, costs, benefits
+
+## 🛠️ Technical Details
+
+### **Core Files**
+- `app/comprehensive_rabies_app.py` - Main Streamlit application
+- `notebooks_initial_run.py` - Core epidemiological simulation
+- `data/model_parameters.xlsx` - Default parameter values
+- `data/coverage_data.csv` - Vaccination coverage data
+
+### **Key Components**
+- **Epidemiological Model**: SEIR-based dog population dynamics
+- **Economic Model**: Cost-benefit analysis with DALYs
+- **Coverage Model**: Time-varying vaccination and PEP coverage
+- **Sensitivity Analysis**: Parameter adjustment capabilities
+
+### **Dependencies**
+- Python 3.11+
+- Streamlit, NumPy, Pandas, Matplotlib, Seaborn
+- See `requirements.txt` for complete list
+
+## 📚 Model Background
+
+This model implements a compartmental epidemiological framework for rabies transmission in dog populations, coupled with economic analysis of vaccination interventions. The model considers:
+
+- **Dog Population Dynamics**: Birth, death, vaccination, disease progression
+- **Human Exposure Risk**: Dog-human transmission, PEP effectiveness
+- **Economic Costs**: Vaccination programs, PEP treatment, productivity losses
+- **Policy Scenarios**: Comparison of intervention strategies
+
+## 🎯 Use Cases
+
+- **Public Health Planning**: Design rabies elimination programs
+- **Economic Evaluation**: Cost-effectiveness of vaccination strategies  
+- **Policy Analysis**: Compare intervention scenarios
+- **Research Applications**: Epidemiological modeling studies
+
+## 📁 Repository Structure
 
 ```
-├── README.md          <- The top-level README for developers using this project
-├── data/              <- Data directory
-│   ├── external/      <- Data from third party sources
-│   ├── processed/     <- The final, canonical data sets for modeling
-│   └── raw/           <- The original, immutable data dump
-├── docs/              <- Project documentation
-├── notebooks/         <- Jupyter notebooks for exploration and communication
-├── reports/           <- Generated analysis as HTML, PDF, LaTeX, etc.
-│   └── figures/       <- Generated graphics and figures for reporting
-├── requirements.txt   <- Package dependencies
-├── setup.py          <- Setup script for installing the project as a package
-├── src/               <- Source code for use in this project
-│   ├── __init__.py    <- Makes src a Python module
-│   ├── data/          <- Scripts to download or generate data
-│   ├── features/      <- Scripts to turn raw data into features for modeling
-│   ├── models/        <- Scripts to train models and make predictions
-│   └── visualization/ <- Scripts to create exploratory and results visualizations
-├── tests/             <- Unit tests and integration tests
-└── config/            <- Configuration files for reproducible environments
+├── app/                           # Main application
+│   ├── comprehensive_rabies_app.py   # Streamlit app
+│   └── archive/                       # Legacy app versions
+├── data/                          # Model data
+│   ├── model_parameters.xlsx         # Default parameters
+│   └── coverage_data.csv             # Coverage scenarios
+├── config/                        # Configuration files
+├── docs/                          # Documentation
+├── archive/                       # Archived components
+│   ├── extra_scripts_archive/         # Analysis scripts
+│   ├── notebooks_archive/             # Jupyter notebooks
+│   └── reports_archive/               # Report outputs
+├── notebooks_initial_run.py       # Core simulation logic
+├── requirements.txt               # Dependencies
+└── run_app.py                     # App launcher
+
 ```
 
-## Getting Started
+## 🤝 Contributing
 
-### Prerequisites
+This model is designed for epidemiological research and public health applications. For questions or contributions, please open an issue or submit a pull request.
 
-- Python 3.8+
-- pip or conda for package management
+## 📄 License
 
-### Installation
+This project is available for academic and public health use. Please cite appropriately in any publications or applications.
 
-1. Clone this repository
-2. Create a virtual environment:
-   ```bash
-   python -m venv .venv
-   .venv\Scripts\activate  # On Windows
-   ```
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+## 🔗 Links
 
-### Usage
-
-1. Place your raw data files in `data/raw/`
-2. Use Jupyter notebooks in `notebooks/` for exploratory data analysis
-3. Develop reusable code modules in `src/`
-4. Generate reports and figures in `reports/`
-
-## Project Organization
-
-This project follows a standard data science project template for reproducibility and collaboration.
-
-## Contributing
-
-1. Create feature branches for new work
-2. Write tests for your code in the `tests/` directory
-3. Update documentation as needed
-4. Submit pull requests for review
-
-## License
-
-This project is licensed under the MIT License.
+- **Live Application**: [rabiesecon.streamlit.app](https://rabiesecon.streamlit.app)
+- **Documentation**: See `README_DEPLOYMENT.md` for deployment details
+- **Support**: Open an issue for questions or bug reports
