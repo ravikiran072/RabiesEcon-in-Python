@@ -628,7 +628,7 @@ def create_parameter_inputs(model_parameters):
             value=float(defaults['pep_prob_no_campaign']),
             step=0.05,
             format="%.2f",
-            help="Probability of receiving PEP, post-exposure (no Vaccination program)"
+            help="Probability of receiving PEP, post-exposure (status quo)"
         )
         
         pep_prob_annual_campaign = st.number_input(
@@ -1399,7 +1399,7 @@ def create_visualization_plots(no_annual_summary, annual_summary):
     
     # Plot 1: Rabid dogs (annual) - Top Left
     axes[0,0].plot(no_annual_filtered["Year"], no_annual_filtered["Canine_rabies_annual"], 
-                   linewidth=2.5, color='red', label='No vaccination campaign')
+                   linewidth=2.5, color='red', label='Status quo')
     axes[0,0].plot(annual_filtered["Year"], annual_filtered["Canine_rabies_annual"], 
                    linewidth=2.5, color='green', label='Annual vaccination campaign')
     axes[0,0].set_title("Rabid dogs (annual)", fontsize=11, fontweight='bold')
@@ -1411,7 +1411,7 @@ def create_visualization_plots(no_annual_summary, annual_summary):
     
     # Plot 2: Canine rabies cases (cumulative) - Top Right
     axes[0,1].plot(no_annual_filtered["Year"], no_annual_filtered["Canine_rabies_cumulative"], 
-                   linewidth=2.5, color='red', label='No vaccination campaign')
+                   linewidth=2.5, color='red', label='Status quo')
     axes[0,1].plot(annual_filtered["Year"], annual_filtered["Canine_rabies_cumulative"], 
                    linewidth=2.5, color='green', label='Annual vaccination campaign')
     axes[0,1].set_title("Canine rabies cases (cumulative)", fontsize=11, fontweight='bold')
@@ -1423,7 +1423,7 @@ def create_visualization_plots(no_annual_summary, annual_summary):
     
     # Plot 3: Human deaths due to rabies (annual) - Bottom Left
     axes[1,0].plot(no_annual_filtered["Year"], no_annual_filtered["Human_rabies_annual"], 
-                   linewidth=2.5, color='red', label='No vaccination campaign')
+                   linewidth=2.5, color='red', label='Status quo')
     axes[1,0].plot(annual_filtered["Year"], annual_filtered["Human_rabies_annual"], 
                    linewidth=2.5, color='green', label='Annual vaccination campaign')
     axes[1,0].set_title("Human deaths due to rabies (annual)", fontsize=11, fontweight='bold')
@@ -1435,7 +1435,7 @@ def create_visualization_plots(no_annual_summary, annual_summary):
     
     # Plot 4: Human deaths (cumulative) - Bottom Right
     axes[1,1].plot(no_annual_filtered["Year"], no_annual_filtered["Human_rabies_cumulative"], 
-                   linewidth=2.5, color='red', label='No vaccination campaign')
+                   linewidth=2.5, color='red', label='Status quo')
     axes[1,1].plot(annual_filtered["Year"], annual_filtered["Human_rabies_cumulative"], 
                    linewidth=2.5, color='green', label='Annual vaccination campaign')
     axes[1,1].set_title("Human deaths (cumulative)", fontsize=11, fontweight='bold')
@@ -1487,7 +1487,7 @@ def create_mortality_rate_plots(no_annual_summary, annual_summary):
             annual_dog_deaths_pct.append(0)
     
     axes[0].plot(years, no_dog_deaths_pct, linewidth=2.5, color='red', 
-                 label='No vaccination campaign', marker='o', markersize=3)
+                 label='Status quo', marker='o', markersize=3)
     axes[0].plot(years, annual_dog_deaths_pct, linewidth=2.5, color='green', 
                  label='Annual vaccination campaign', marker='s', markersize=3)
     axes[0].set_title('Dog Deaths Due to Rabies\n(% of Dog Population)', fontsize=12, fontweight='bold')
@@ -1524,7 +1524,7 @@ def create_mortality_rate_plots(no_annual_summary, annual_summary):
             annual_human_deaths_rate.append(0)
     
     axes[1].plot(years, no_human_deaths_rate, linewidth=2.5, color='red', 
-                 label='No vaccination campaign', marker='o', markersize=3)
+                 label='Status quo', marker='o', markersize=3)
     axes[1].plot(years, annual_human_deaths_rate, linewidth=2.5, color='green', 
                  label='Annual vaccination campaign', marker='s', markersize=3)
     axes[1].set_title('Human Deaths Due to Rabies\n(per 100,000 Population)', fontsize=12, fontweight='bold')
@@ -1594,8 +1594,8 @@ def main():
         progress_bar.progress(20)
         initial_run = run_initial_simulation(params)
         
-        # Step 2: No vaccination scenario
-        status_text.text("Simulating no vaccination scenario...")
+        # Step 2: Status quo scenario
+        status_text.text("Simulating status quo scenario...")
         progress_bar.progress(40)
         no_annual_vaccination = run_scenario_simulation(initial_run, params, coverage_data, "no_annual_vaccination")
         
@@ -1622,7 +1622,7 @@ def main():
         st.success("🎉 Analysis completed successfully!")
         
         # Create tabs for different views
-        tab1, tab2, tab3, tab4 = st.tabs(["📈 Executive Summary", "📊 Program Summary", "📋 Detailed Results", "📈 Visualizations"])
+        tab1, tab2, tab3 = st.tabs(["📈 Executive Summary", "📊 Program Summary", "📈 Visualizations"])
         
         with tab1:
             st.header("Executive Summary")
@@ -1793,7 +1793,7 @@ def main():
             **Chart Interpretation:**
             - **Top row**: Shows dramatic reduction in canine rabies cases with vaccination
             - **Bottom row**: Demonstrates significant prevention of human deaths
-            - **Red lines**: No vaccination program (status quo)
+            - **Red lines**: Status quo
             - **Green lines**: Annual vaccination program (intervention)
             """)
         
@@ -1808,81 +1808,80 @@ def main():
             # Program definition
             st.subheader("Program Definition")
             
+            # Get actual coverage values from the data (now truly dynamic based on user settings)
+            # Sample representative years from each phase to show coverage ranges
+            phase_sample_years = [1, 5, 10, 15, 20, 30]  # Sample from each phase
+            
+            no_vacc_coverages = []
+            annual_vacc_coverages = []
+            no_pep_coverages = []
+            annual_pep_coverages = []
+            
+            for year in phase_sample_years:
+                no_vacc_coverages.append(get_vaccination_coverage(year, "no_annual_vaccination", coverage_data) * 100)
+                annual_vacc_coverages.append(get_vaccination_coverage(year, "annual_vaccination", coverage_data) * 100)
+                no_pep_coverages.append(get_pep_coverage(year, "no_annual_vaccination", coverage_data) * 100)
+                annual_pep_coverages.append(get_pep_coverage(year, "annual_vaccination", coverage_data) * 100)
+            
             col1, col2 = st.columns(2)
             
             with col1:
-                st.markdown("""
-                **No Vaccination Program:**
+                # Create coverage range display for no vaccination
+                no_vacc_min, no_vacc_max = min(no_vacc_coverages), max(no_vacc_coverages)
+                no_pep_min, no_pep_max = min(no_pep_coverages), max(no_pep_coverages)
+                
+                no_vacc_range = f"{no_vacc_min:.0f}%" if no_vacc_min == no_vacc_max else f"{no_vacc_min:.0f}-{no_vacc_max:.0f}%"
+                no_pep_range = f"{no_pep_min:.0f}%" if no_pep_min == no_pep_max else f"{no_pep_min:.0f}-{no_pep_max:.0f}%"
+                
+                st.markdown(f"""
+                **Status Quo:**
                 - Single/one-time vaccination
-                - 0% vaccination coverage
-                - 25% human exposures receive PEP
-                - 0% female dogs spayed annually
-                - 0% male dogs neutered annually
+                - {no_vacc_range} vaccination coverage across phases
+                - {no_pep_range} human exposures receive PEP
                 """)
             
             with col2:
-                st.markdown("""
+                # Create coverage range display for annual vaccination
+                annual_vacc_min, annual_vacc_max = min(annual_vacc_coverages), max(annual_vacc_coverages)
+                annual_pep_min, annual_pep_max = min(annual_pep_coverages), max(annual_pep_coverages)
+                
+                annual_vacc_range = f"{annual_vacc_min:.0f}%" if annual_vacc_min == annual_vacc_max else f"{annual_vacc_min:.0f}-{annual_vacc_max:.0f}%"
+                annual_pep_range = f"{annual_pep_min:.0f}%" if annual_pep_min == annual_pep_max else f"{annual_pep_min:.0f}-{annual_pep_max:.0f}%"
+                
+                st.markdown(f"""
                 **Vaccination Option 1:**
                 - Annual vaccination program
-                - Varying vaccination coverage
-                - 50% human exposures receive PEP
-                - 0% female dogs spayed annually
-                - 0% male dogs neutered annually
+                - {annual_vacc_range} vaccination coverage across phases
+                - {annual_pep_range} human exposures receive PEP
                 """)
-            
-            # Exposure rates
-            st.subheader("Suspect Human Rabies Exposures (per 100,000 persons) in Year 1")
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown(f"""
-                <div style="background: linear-gradient(135deg, #7c2d12 0%, #dc2626 100%); 
-                           padding: 1.2rem; border-radius: 10px; text-align: center; 
-                           box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin: 0.5rem 0;">
-                    <h4 style="color: #fecaca; margin: 0; font-size: 1rem; font-weight: 600;">No Vaccination Program</h4>
-                    <h2 style="color: white; margin: 0.5rem 0; font-size: 2rem; font-weight: bold;">{year1_no_vacc_rate:.2f}</h2>
-                </div>
-                """, unsafe_allow_html=True)
-            with col2:
-                st.markdown(f"""
-                <div style="background: linear-gradient(135deg, #065f46 0%, #059669 100%); 
-                           padding: 1.2rem; border-radius: 10px; text-align: center; 
-                           box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin: 0.5rem 0;">
-                    <h4 style="color: #a7f3d0; margin: 0; font-size: 1rem; font-weight: 600;">Vaccination Option 1</h4>
-                    <h2 style="color: white; margin: 0.5rem 0; font-size: 2rem; font-weight: bold;">{year1_vacc_rate:.2f}</h2>
-                </div>
-                """, unsafe_allow_html=True)
             
             # Summary table
             st.subheader("Fixed Timeframes Analysis (Years 5, 10, 30)")
+            st.markdown("**Key metrics at critical program milestones showing cumulative impact, costs, and cost-effectiveness ratios.**")
             st.dataframe(
                 summary_df,
                 column_config={
                     "Time_Period": "Time Period",
                     "Metric": "Metric",
-                    "No_Vacc_Ann": "No Vacc (Annual)",
-                    "No_Vacc_Cum": "No Vacc (Cumulative)",
+                    "No_Vacc_Ann": "Status Quo (Annual)",
+                    "No_Vacc_Cum": "Status Quo (Cumulative)",
                     "Vacc1_Ann": "Vaccination (Annual)",
                     "Vacc1_Cum": "Vaccination (Cumulative)"
                 },
                 hide_index=True,
                 use_container_width=True
             )
-        
-        with tab3:
-            st.header("Detailed Results")
             
-            # Year selector
-            year_options = list(range(1, 31))
-            selected_years = st.multiselect(
-                "Select years to display:",
-                year_options,
-                default=[1, 5, 10, 15, 20, 25, 30]
-            )
+            # Detailed Results section
+            st.subheader("Detailed Year-by-Year Analysis")
+            st.markdown("**Comprehensive comparison showing deaths, costs, and program impact across key program years.**")
             
-            if selected_years:
-                # Create detailed comparison table
-                comparison_data = []
-                for year in selected_years:
+            # Fixed years to display
+            selected_years = [1, 5, 10, 15, 20, 25, 30]
+            
+            # Create detailed comparison table
+            comparison_data = []
+            for year in selected_years:
                     no_vacc_data = no_annual_summary.iloc[year]
                     vacc_data = annual_summary.iloc[year]
                     
@@ -1897,27 +1896,27 @@ def main():
                         'Vacc_Total_Cost': f"${(vacc_data['Vaccination_cost_cumulative'] + vacc_data['Suspect_exposure_cost_cumulative'] + vacc_data['PEP_cost_cumulative']):,.0f}",
                         'Additional_Cost': f"${((vacc_data['Vaccination_cost_cumulative'] + vacc_data['Suspect_exposure_cost_cumulative'] + vacc_data['PEP_cost_cumulative']) - (no_vacc_data['Vaccination_cost_cumulative'] + no_vacc_data['Suspect_exposure_cost_cumulative'] + no_vacc_data['PEP_cost_cumulative'])):,.0f}"
                     })
-                
-                comparison_df = pd.DataFrame(comparison_data)
-                
-                st.dataframe(
-                    comparison_df,
-                    column_config={
-                        "Year": "Year",
-                        "No_Vacc_Canine_Deaths": "Canine Deaths (No Vacc)",
-                        "Vacc_Canine_Deaths": "Canine Deaths (Vacc)",
-                        "No_Vacc_Human_Deaths": "Human Deaths (No Vacc)",
-                        "Vacc_Human_Deaths": "Human Deaths (Vacc)",
-                        "Deaths_Averted": "Deaths Averted",
-                        "No_Vacc_Total_Cost": "Total Cost (No Vacc)",
-                        "Vacc_Total_Cost": "Total Cost (Vacc)",
-                        "Additional_Cost": "Additional Cost"
-                    },
-                    hide_index=True,
-                    use_container_width=True
-                )
+            
+            comparison_df = pd.DataFrame(comparison_data)
+            
+            st.dataframe(
+                comparison_df,
+                column_config={
+                    "Year": "Year",
+                    "No_Vacc_Canine_Deaths": "Canine Deaths (Status Quo)",
+                    "Vacc_Canine_Deaths": "Canine Deaths (Vacc)",
+                    "No_Vacc_Human_Deaths": "Human Deaths (Status Quo)",
+                    "Vacc_Human_Deaths": "Human Deaths (Vacc)",
+                    "Deaths_Averted": "Deaths Averted",
+                    "No_Vacc_Total_Cost": "Total Cost (Status Quo)",
+                    "Vacc_Total_Cost": "Total Cost (Vacc)",
+                    "Additional_Cost": "Additional Cost"
+                },
+                hide_index=True,
+                use_container_width=True
+            )
         
-        with tab4:
+        with tab3:
             st.header("Impact Visualizations")
             
             # Create and display plots
