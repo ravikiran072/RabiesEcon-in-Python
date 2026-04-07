@@ -70,12 +70,8 @@ Human_life_expectancy = model_parameters.query("Parameters == 'Human_life_expect
 Humans_per_free_roaming_dog = model_parameters.query(
     "Parameters == 'Humans_per_free_roaming_dog'"
 )["Values"].iloc[0]
-Free_roaming_dog_population = model_parameters.query(
-    "Parameters == 'Free_roaming_dog_population'"
-)["Values"].iloc[0]
-Free_roaming_dogs_per_km2 = model_parameters.query(
-    "Parameters == 'Free_roaming_dogs_per_km2'"
-)["Values"].iloc[0]
+Free_roaming_dog_population = Human_population/Humans_per_free_roaming_dog
+Free_roaming_dogs_per_km2 = Free_roaming_dog_population/Km2_of_program_area
 Dog_birth_rate_per_1000_dogs = model_parameters.query(
     "Parameters == 'Dog_birth_rate_per_1000_dogs'"
 )["Values"].iloc[0]
@@ -95,9 +91,7 @@ Probability_of_human_developing_rabies = model_parameters.query(
 Dog_Human_transmission_rate = model_parameters.query(
     "Parameters == 'Dog_Human_transmission_rate'"
 )["Values"].iloc[0]
-R0_dog_to_dog = model_parameters.query(
-    "Parameters == 'R0_dog_to_dog'"
-)["Values"].iloc[0]
+R0_dog_to_dog = 0.34 * np.log(Free_roaming_dogs_per_km2)
 
 # Suspect exposure parameters
 inflation_factor_for_the_suspect_exposure = model_parameters.query(

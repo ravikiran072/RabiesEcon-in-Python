@@ -725,8 +725,8 @@ def create_parameter_inputs(model_parameters):
         Free_roaming_dogs_per_km2 = Free_roaming_dog_population / Km2_of_program_area
         
         # Calculate R0_dog_to_dog (this would need the actual formula from your model)
-        # For now, using the Excel value as placeholder - you'll need to implement the actual calculation
-        R0_dog_to_dog = 1.38053211  # This should be calculated based on your epidemiological model
+        
+        R0_dog_to_dog = 0.34 * np.log(Free_roaming_dogs_per_km2)  # This should replaced with AJ paprer's formula
         
         st.markdown("**📊 Population Metrics**")
         st.metric("Humans per km²", f"{Humans_per_km2:,.1f}")
