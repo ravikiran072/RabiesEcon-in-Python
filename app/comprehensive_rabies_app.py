@@ -427,7 +427,9 @@ def create_parameter_inputs(model_parameters):
             # Manual entry fields
             Km2_of_program_area = st.number_input(
                 "Program Area (km²)",
-                min_value=1000.0,
+                min_value=500.0
+                streamlit run app/comprehensive_rabies_app.py                # Verify the app runs without errors locally first
+                streamlit run app/comprehensive_rabies_app.py00.0,
                 max_value=100000.0,
                 value=float(defaults['Km2_of_program_area']),
                 step=1000.0,
@@ -457,7 +459,7 @@ def create_parameter_inputs(model_parameters):
             
             Km2_of_program_area = st.number_input(
                 "Program Area (km²)",
-                min_value=1000.0,
+                min_value=500.0,
                 max_value=100000.0,
                 value=preset["area"],
                 step=1000.0,
