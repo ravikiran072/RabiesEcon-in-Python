@@ -88,9 +88,8 @@ Probability_of_rabies_in_biting_dogs = model_parameters.query(
 Probability_of_human_developing_rabies = model_parameters.query(
     "Parameters == 'Probability_of_human_developing_rabies'"
 )["Values"].iloc[0]
-Dog_Human_transmission_rate = model_parameters.query(
-    "Parameters == 'Dog_Human_transmission_rate'"
-)["Values"].iloc[0]
+# Calculate Dog-Human transmission rate dynamically
+Dog_Human_transmission_rate = Annual_dog_bite_risk * Probability_of_rabies_in_biting_dogs * Probability_of_human_developing_rabies
 R0_dog_to_dog = 0.34 * np.log(Free_roaming_dogs_per_km2)
 
 # Suspect exposure parameters
