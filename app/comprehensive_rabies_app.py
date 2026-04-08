@@ -2049,7 +2049,7 @@ def main():
             
             # Create and display the interactive visualization plots
             fig = create_visualization_plots(no_annual_summary, annual_summary)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key="executive_summary_charts")
             
             # Add interpretation text below the plots
             st.markdown("""
@@ -2184,14 +2184,14 @@ def main():
             
             # Create and display interactive plots
             fig = create_visualization_plots(no_annual_summary, annual_summary)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key="main_impact_charts")
             
             # Mortality Rate Analysis
             st.subheader("Mortality Rate Analysis")
             
             # Create and display interactive mortality rate plots
             fig_mortality = create_mortality_rate_plots(no_annual_summary, annual_summary)
-            st.plotly_chart(fig_mortality, use_container_width=True)
+            st.plotly_chart(fig_mortality, use_container_width=True, key="mortality_rate_charts")
 
 if __name__ == "__main__":
     main()
