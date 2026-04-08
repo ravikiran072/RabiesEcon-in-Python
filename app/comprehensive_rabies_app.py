@@ -3,6 +3,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import plotly.graph_objects as go
+import plotly.subplots as sp
+from plotly.subplots import make_subplots
 import os
 import time as tm
 from io import BytesIO
@@ -1409,83 +1412,196 @@ def create_program_summary_table(no_annual_summary, annual_summary, params):
     return pd.DataFrame(summary_rows), year1_no_vacc_suspect_rate, year1_vacc_suspect_rate
 
 def create_visualization_plots(no_annual_summary, annual_summary):
-    """Create the 2x2 visualization plots"""
+    """Create modern interactive 2x2 visualization plots using Plotly"""
     # Filter data to start from year 1
     no_annual_filtered = no_annual_summary[no_annual_summary["Year"] >= 1].iloc[:30]  # Years 1-30
     annual_filtered = annual_summary[annual_summary["Year"] >= 1].iloc[:30]  # Years 1-30
     
-    # Create 2x2 subplot grid with smaller figure size to fit screen better
-    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+    # Professional color scheme
+    colors = {
+        'status_quo': '#E53E3E',      # Professional red
+        'intervention': '#3182CE',     # Professional blue
+        'status_quo_fill': 'rgba(229, 62, 62, 0.1)',
+        'intervention_fill': 'rgba(49, 130, 206, 0.1)'
+    }
     
-    # Plot 1: Rabid dogs (annual) - Top Left
-    axes[0,0].plot(no_annual_filtered["Year"], no_annual_filtered["Canine_rabies_annual"], 
-                   linewidth=2.5, color='red', label='Status quo')
-    axes[0,0].plot(annual_filtered["Year"], annual_filtered["Canine_rabies_annual"], 
-                   linewidth=2.5, color='green', label='Annual vaccination campaign')
-    axes[0,0].set_title("Rabid dogs (annual)", fontsize=11, fontweight='bold')
-    axes[0,0].set_xlabel("Year", fontsize=10)
-    axes[0,0].set_ylabel("Canine rabies cases", fontsize=10)
-    axes[0,0].grid(True, alpha=0.3)
-    axes[0,0].set_xlim(1, 30)
-    axes[0,0].tick_params(axis='both', which='major', labelsize=9)
+    # Create subplots with modern styling
+    fig = make_subplots(
+        rows=2, cols=2,
+        subplot_titles=[
+            "🐕 Annual Rabid Dogs",
+            "📈 Cumulative Canine Cases", 
+            "💔 Annual Human Deaths",
+            "📊 Cumulative Human Deaths"
+        ],
+        vertical_spacing=0.12,
+        horizontal_spacing=0.10
+    )
     
-    # Plot 2: Canine rabies cases (cumulative) - Top Right
-    axes[0,1].plot(no_annual_filtered["Year"], no_annual_filtered["Canine_rabies_cumulative"], 
-                   linewidth=2.5, color='red', label='Status quo')
-    axes[0,1].plot(annual_filtered["Year"], annual_filtered["Canine_rabies_cumulative"], 
-                   linewidth=2.5, color='green', label='Annual vaccination campaign')
-    axes[0,1].set_title("Canine rabies cases (cumulative)", fontsize=11, fontweight='bold')
-    axes[0,1].set_xlabel("Year", fontsize=10)
-    axes[0,1].set_ylabel("Cumulative canine cases", fontsize=10)
-    axes[0,1].grid(True, alpha=0.3)
-    axes[0,1].set_xlim(1, 30)
-    axes[0,1].tick_params(axis='both', which='major', labelsize=9)
+    # Plot configurations
+    plots_config = [
+        {
+            'row': 1, 'col': 1,
+            'data_col': 'Canine_rabies_annual',
+            'yaxis_title': 'Cases per Year',
+            'icon': '🐕'
+        },
+        {
+            'row': 1, 'col': 2,
+            'data_col': 'Canine_rabies_cumulative', 
+            'yaxis_title': 'Total Cases',
+            'icon': '📈'
+        },
+        {
+            'row': 2, 'col': 1,
+            'data_col': 'Human_rabies_annual',
+            'yaxis_title': 'Deaths per Year',
+            'icon': '💔'
+        },
+        {
+            'row': 2, 'col': 2,
+            'data_col': 'Human_rabies_cumulative',
+            'yaxis_title': 'Total Deaths', 
+            'icon': '📊'
+        }
+    ]
     
-    # Plot 3: Human deaths due to rabies (annual) - Bottom Left
-    axes[1,0].plot(no_annual_filtered["Year"], no_annual_filtered["Human_rabies_annual"], 
-                   linewidth=2.5, color='red', label='Status quo')
-    axes[1,0].plot(annual_filtered["Year"], annual_filtered["Human_rabies_annual"], 
-                   linewidth=2.5, color='green', label='Annual vaccination campaign')
-    axes[1,0].set_title("Human deaths due to rabies (annual)", fontsize=11, fontweight='bold')
-    axes[1,0].set_xlabel("Year", fontsize=10)
-    axes[1,0].set_ylabel("Human deaths", fontsize=10)
-    axes[1,0].grid(True, alpha=0.3)
-    axes[1,0].set_xlim(1, 30)
-    axes[1,0].tick_params(axis='both', which='major', labelsize=9)
+    # Add traces for each subplot
+    for i, config in enumerate(plots_config):
+        # Status quo line
+        fig.add_trace(
+            go.Scatter(
+                x=no_annual_filtered["Year"],
+                y=no_annual_filtered[config['data_col']],
+                mode='lines+markers',
+                name='Status Quo',
+                line=dict(
+                    color=colors['status_quo'],
+                    width=3,
+                    shape='spline'
+                ),
+                marker=dict(
+                    size=6,
+                    color='white',
+                    line=dict(color=colors['status_quo'], width=2)
+                ),
+                fill='tonexty' if i > 0 else 'tozeroy',
+                fillcolor=colors['status_quo_fill'],
+                hovertemplate=f"<b>Status Quo</b><br>Year: %{{x}}<br>{config['yaxis_title']}: %{{y:,.0f}}<extra></extra>",
+                showlegend=i == 0
+            ),
+            row=config['row'], col=config['col']
+        )
+        
+        # Vaccination campaign line 
+        fig.add_trace(
+            go.Scatter(
+                x=annual_filtered["Year"],
+                y=annual_filtered[config['data_col']],
+                mode='lines+markers',
+                name='Vaccination Program',
+                line=dict(
+                    color=colors['intervention'],
+                    width=3,
+                    shape='spline'
+                ),
+                marker=dict(
+                    size=6,
+                    color='white', 
+                    line=dict(color=colors['intervention'], width=2)
+                ),
+                fill='tonexty',
+                fillcolor=colors['intervention_fill'],
+                hovertemplate=f"<b>Vaccination Program</b><br>Year: %{{x}}<br>{config['yaxis_title']}: %{{y:,.0f}}<extra></extra>",
+                showlegend=i == 0
+            ),
+            row=config['row'], col=config['col']
+        )
     
-    # Plot 4: Human deaths (cumulative) - Bottom Right
-    axes[1,1].plot(no_annual_filtered["Year"], no_annual_filtered["Human_rabies_cumulative"], 
-                   linewidth=2.5, color='red', label='Status quo')
-    axes[1,1].plot(annual_filtered["Year"], annual_filtered["Human_rabies_cumulative"], 
-                   linewidth=2.5, color='green', label='Annual vaccination campaign')
-    axes[1,1].set_title("Human deaths (cumulative)", fontsize=11, fontweight='bold')
-    axes[1,1].set_xlabel("Year", fontsize=10)
-    axes[1,1].set_ylabel("Cumulative human deaths", fontsize=10)
-    axes[1,1].grid(True, alpha=0.3)
-    axes[1,1].set_xlim(1, 30)
-    axes[1,1].tick_params(axis='both', which='major', labelsize=9)
+    # Update layout with professional styling
+    fig.update_layout(
+        height=700,
+        font=dict(
+            family="Inter, -apple-system, BlinkMacSystemFont, sans-serif",
+            size=12,
+            color="#2D3748"
+        ),
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-0.05,
+            xanchor="center",
+            x=0.5,
+            bgcolor="rgba(255,255,255,0.8)",
+            bordercolor="#E2E8F0",
+            borderwidth=1,
+            font=dict(size=12)
+        ),
+        margin=dict(t=80, b=100, l=60, r=60)
+    )
     
-    # Add a single legend at the bottom
-    handles, labels = axes[0,0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, -0.05), ncol=2, fontsize=10)
+    # Update axes styling
+    for i in range(1, 5):
+        fig.update_xaxes(
+            title_text="Year",
+            gridcolor="#E2E8F0", 
+            gridwidth=1,
+            showline=True,
+            linecolor="#CBD5E0",
+            linewidth=1,
+            range=[1, 30],
+            row=(i-1)//2 + 1,
+            col=(i-1)%2 + 1
+        )
+        
+        fig.update_yaxes(
+            title_text=plots_config[i-1]['yaxis_title'],
+            gridcolor="#E2E8F0",
+            gridwidth=1, 
+            showline=True,
+            linecolor="#CBD5E0",
+            linewidth=1,
+            row=(i-1)//2 + 1,
+            col=(i-1)%2 + 1
+        )
     
-    # Adjust layout with tighter spacing
-    plt.tight_layout()
-    plt.subplots_adjust(bottom=0.12, hspace=0.3, wspace=0.25)
+    # Update subplot titles with better styling
+    for i, annotation in enumerate(fig['layout']['annotations']):
+        fig['layout']['annotations'][i].update(
+            font=dict(size=14, color="#2D3748", family="Inter, sans-serif"),
+            bordercolor="#E2E8F0",
+            borderwidth=1,
+            bgcolor="rgba(255,255,255,0.8)",
+            borderpad=4
+        )
     
     return fig
 
 def create_mortality_rate_plots(no_annual_summary, annual_summary):
-    """Create side-by-side plots for dog and human mortality rates"""
-    from matplotlib.ticker import FuncFormatter
-    
-    # Create figure with side-by-side subplots
-    fig, axes = plt.subplots(1, 2, figsize=(15, 6))
-    
+    """Create modern interactive side-by-side plots for dog and human mortality rates"""
     # Get years data (skip year 0)
-    years = range(1, 31)
+    years = list(range(1, 31))
     
-    # Left plot: Dog deaths as percentage of population
+    # Professional color scheme
+    colors = {
+        'status_quo': '#E53E3E',      # Professional red
+        'intervention': '#3182CE',     # Professional blue
+        'status_quo_fill': 'rgba(229, 62, 62, 0.1)',
+        'intervention_fill': 'rgba(49, 130, 206, 0.1)'
+    }
+    
+    # Create subplots
+    fig = make_subplots(
+        rows=1, cols=2,
+        subplot_titles=[
+            "🐕 Dog Deaths (% of Population)",
+            "👥 Human Deaths (per 100,000)"
+        ],
+        horizontal_spacing=0.15
+    )
+    
     # Calculate dog deaths percentage
     no_dog_deaths_pct = []
     annual_dog_deaths_pct = []
@@ -1506,24 +1622,7 @@ def create_mortality_rate_plots(no_annual_summary, annual_summary):
             no_dog_deaths_pct.append(0)
             annual_dog_deaths_pct.append(0)
     
-    axes[0].plot(years, no_dog_deaths_pct, linewidth=2.5, color='red', 
-                 label='Status quo', marker='o', markersize=3)
-    axes[0].plot(years, annual_dog_deaths_pct, linewidth=2.5, color='green', 
-                 label='Annual vaccination campaign', marker='s', markersize=3)
-    axes[0].set_title('Dog Deaths Due to Rabies\n(% of Dog Population)', fontsize=12, fontweight='bold')
-    axes[0].set_xlabel('Year', fontsize=10)
-    axes[0].set_ylabel('Dog Deaths (%)', fontsize=10)
-    axes[0].grid(True, alpha=0.3)
-    axes[0].set_xlim(1, 30)
-    axes[0].tick_params(axis='both', which='major', labelsize=9)
-    axes[0].legend(loc='upper right', fontsize=9)
-    
-    # Format y-axis as percentage
-    def percentage_formatter(x, pos):
-        return f'{x:.3f}%'
-    axes[0].yaxis.set_major_formatter(FuncFormatter(percentage_formatter))
-    
-    # Right plot: Human deaths per 100,000 population
+    # Calculate human deaths per 100,000
     no_human_deaths_rate = []
     annual_human_deaths_rate = []
     
@@ -1543,24 +1642,168 @@ def create_mortality_rate_plots(no_annual_summary, annual_summary):
             no_human_deaths_rate.append(0)
             annual_human_deaths_rate.append(0)
     
-    axes[1].plot(years, no_human_deaths_rate, linewidth=2.5, color='red', 
-                 label='Status quo', marker='o', markersize=3)
-    axes[1].plot(years, annual_human_deaths_rate, linewidth=2.5, color='green', 
-                 label='Annual vaccination campaign', marker='s', markersize=3)
-    axes[1].set_title('Human Deaths Due to Rabies\n(per 100,000 Population)', fontsize=12, fontweight='bold')
-    axes[1].set_xlabel('Year', fontsize=10)
-    axes[1].set_ylabel('Deaths per 100,000', fontsize=10)
-    axes[1].grid(True, alpha=0.3)
-    axes[1].set_xlim(1, 30)
-    axes[1].tick_params(axis='both', which='major', labelsize=9)
-    axes[1].legend(loc='upper right', fontsize=9)
+    # Add dog mortality traces
+    fig.add_trace(
+        go.Scatter(
+            x=years,
+            y=no_dog_deaths_pct,
+            mode='lines+markers',
+            name='Status Quo',
+            line=dict(
+                color=colors['status_quo'],
+                width=3,
+                shape='spline'
+            ),
+            marker=dict(
+                size=6,
+                color='white',
+                line=dict(color=colors['status_quo'], width=2)
+            ),
+            fill='tozeroy',
+            fillcolor=colors['status_quo_fill'],
+            hovertemplate="<b>Status Quo</b><br>Year: %{x}<br>Dog Deaths: %{y:.3f}%<extra></extra>"
+        ),
+        row=1, col=1
+    )
     
-    # Format y-axis for rate
-    def rate_formatter(x, pos):
-        return f'{x:.2f}'
-    axes[1].yaxis.set_major_formatter(FuncFormatter(rate_formatter))
+    fig.add_trace(
+        go.Scatter(
+            x=years,
+            y=annual_dog_deaths_pct,
+            mode='lines+markers',
+            name='Vaccination Program',
+            line=dict(
+                color=colors['intervention'],
+                width=3,
+                shape='spline'
+            ),
+            marker=dict(
+                size=6,
+                color='white',
+                line=dict(color=colors['intervention'], width=2)
+            ),
+            fill='tonexty',
+            fillcolor=colors['intervention_fill'],
+            hovertemplate="<b>Vaccination Program</b><br>Year: %{x}<br>Dog Deaths: %{y:.3f}%<extra></extra>",
+            showlegend=False
+        ),
+        row=1, col=1
+    )
     
-    plt.tight_layout()
+    # Add human mortality traces
+    fig.add_trace(
+        go.Scatter(
+            x=years,
+            y=no_human_deaths_rate,
+            mode='lines+markers',
+            name='Status Quo',
+            line=dict(
+                color=colors['status_quo'],
+                width=3,
+                shape='spline'
+            ),
+            marker=dict(
+                size=6,
+                color='white',
+                line=dict(color=colors['status_quo'], width=2)
+            ),
+            fill='tozeroy',
+            fillcolor=colors['status_quo_fill'],
+            hovertemplate="<b>Status Quo</b><br>Year: %{x}<br>Deaths: %{y:.2f} per 100k<extra></extra>",
+            showlegend=False
+        ),
+        row=1, col=2
+    )
+    
+    fig.add_trace(
+        go.Scatter(
+            x=years,
+            y=annual_human_deaths_rate,
+            mode='lines+markers',
+            name='Vaccination Program',
+            line=dict(
+                color=colors['intervention'],
+                width=3,
+                shape='spline'
+            ),
+            marker=dict(
+                size=6,
+                color='white',
+                line=dict(color=colors['intervention'], width=2)
+            ),
+            fill='tonexty',
+            fillcolor=colors['intervention_fill'],
+            hovertemplate="<b>Vaccination Program</b><br>Year: %{x}<br>Deaths: %{y:.2f} per 100k<extra></extra>",
+            showlegend=False
+        ),
+        row=1, col=2
+    )
+    
+    # Update layout with professional styling
+    fig.update_layout(
+        height=500,
+        font=dict(
+            family="Inter, -apple-system, BlinkMacSystemFont, sans-serif",
+            size=12,
+            color="#2D3748"
+        ),
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-0.1,
+            xanchor="center",
+            x=0.5,
+            bgcolor="rgba(255,255,255,0.8)",
+            bordercolor="#E2E8F0",
+            borderwidth=1,
+            font=dict(size=12)
+        ),
+        margin=dict(t=80, b=100, l=60, r=60)
+    )
+    
+    # Update axes styling
+    fig.update_xaxes(
+        title_text="Year",
+        gridcolor="#E2E8F0",
+        gridwidth=1,
+        showline=True,
+        linecolor="#CBD5E0",
+        linewidth=1,
+        range=[1, 30]
+    )
+    
+    fig.update_yaxes(
+        title_text="Dog Deaths (%)",
+        gridcolor="#E2E8F0",
+        gridwidth=1,
+        showline=True,
+        linecolor="#CBD5E0",
+        linewidth=1,
+        row=1, col=1
+    )
+    
+    fig.update_yaxes(
+        title_text="Deaths per 100,000",
+        gridcolor="#E2E8F0",
+        gridwidth=1,
+        showline=True,
+        linecolor="#CBD5E0",
+        linewidth=1,
+        row=1, col=2
+    )
+    
+    # Update subplot titles with better styling
+    for i, annotation in enumerate(fig['layout']['annotations']):
+        fig['layout']['annotations'][i].update(
+            font=dict(size=14, color="#2D3748", family="Inter, sans-serif"),
+            bordercolor="#E2E8F0",
+            borderwidth=1,
+            bgcolor="rgba(255,255,255,0.8)",
+            borderpad=4
+        )
+    
     return fig
 
 # Main Streamlit App
@@ -1804,9 +2047,9 @@ def main():
             st.subheader("📈 Impact Visualization")
             st.markdown("Visual comparison of rabies outcomes with and without vaccination programs over 30 years:")
             
-            # Create and display the visualization plots
+            # Create and display the interactive visualization plots
             fig = create_visualization_plots(no_annual_summary, annual_summary)
-            st.pyplot(fig)
+            st.plotly_chart(fig, use_container_width=True)
             
             # Add interpretation text below the plots
             st.markdown("""
@@ -1939,16 +2182,16 @@ def main():
         with tab3:
             st.header("Impact Visualizations")
             
-            # Create and display plots
+            # Create and display interactive plots
             fig = create_visualization_plots(no_annual_summary, annual_summary)
-            st.pyplot(fig)
+            st.plotly_chart(fig, use_container_width=True)
             
             # Mortality Rate Analysis
             st.subheader("Mortality Rate Analysis")
             
-            # Create and display mortality rate plots
+            # Create and display interactive mortality rate plots
             fig_mortality = create_mortality_rate_plots(no_annual_summary, annual_summary)
-            st.pyplot(fig_mortality)
+            st.plotly_chart(fig_mortality, use_container_width=True)
 
 if __name__ == "__main__":
     main()
