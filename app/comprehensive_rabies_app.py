@@ -26,27 +26,27 @@ st.markdown("""
         padding-top: 2rem;
     }
     .stMetric {
-        background-color: #e6efff;
-        color: #1a202c;
-        border: 1px solid #cbd5e0;
+        background-color: #4f6bcc;
+        color: white;
+        border: 1px solid #6b7db8;
         padding: 1rem;
         border-radius: 0.5rem;
         margin: 0.5rem 0;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     .stMetric label {
-        color: #2d3748 !important;
+        color: #f0f4ff !important;
         font-weight: 600;
     }
     .stMetric [data-testid="metric-container"] > div {
-        color: #1a202c !important;
+        color: white !important;
     }
     .stMetric [data-testid="metric-container"] [data-testid="stMetricValue"] {
-        color: #1a202c !important;
+        color: #ffffff !important;
         font-weight: bold;
     }
     .stMetric [data-testid="metric-container"] [data-testid="stMetricDelta"] {
-        color: #38a169 !important;
+        color: #86efac !important;
     }
     .summary-table {
         font-size: 0.9rem;
