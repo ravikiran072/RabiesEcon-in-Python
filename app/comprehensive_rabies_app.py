@@ -410,7 +410,7 @@ def create_parameter_inputs(model_parameters):
                 "adjustment": 1.05
             },
             "Bengaluru": {
-                "area": 172.0,
+                "area": 712.0,
                 "population": 8443675,
                 "hdr": 30.0,
                 "adjustment": 1.05
