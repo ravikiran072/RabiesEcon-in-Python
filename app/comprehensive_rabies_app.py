@@ -548,34 +548,34 @@ def create_parameter_inputs(model_parameters):
         )
         
         st.markdown("**🦠 Transmission Risk Constants**")
-        Annual_dog_bite_risk = st.number_input(
-            "Annual Dog Bite Risk",
-            min_value=0.001,
-            max_value=0.1,
-            value=float(defaults['Annual_dog_bite_risk']),
-            step=0.001,
-            format="%.4f",
-            help="Annual dog bite risk (suggested 1% - 3%)"
+        Annual_dog_bite_risk_pct = st.number_input(
+            "Annual Dog Bite Risk (%)",
+            min_value=0.1,
+            max_value=10.0,
+            value=1.0,
+            step=0.1,
+            format="%.1f",
+            help="Annual dog bite risk as percentage (default 1%)"
         )
         
-        Probability_of_rabies_in_biting_dogs = st.number_input(
-            "Probability of Rabies in Biting Dogs",
-            min_value=0.0001,
-            max_value=0.5,
-            value=float(defaults['Probability_of_rabies_in_biting_dogs']),
-            step=0.001,
-            format="%.4f",
-            help="Probability of rabies in biting dogs (suggested 0.1% - 5%)"
-        )
-        
-        Probability_of_human_developing_rabies = st.number_input(
-            "Probability of Human Developing Rabies",
+        Probability_of_rabies_in_biting_dogs_pct = st.number_input(
+            "Probability of Rabies in Biting Dogs (%)",
             min_value=0.01,
-            max_value=1.0,
-            value=float(defaults['Probability_of_human_developing_rabies']),
+            max_value=50.0,
+            value=1.0,
             step=0.01,
-            format="%.3f",
-            help="Probability of human developing rabies (suggested 17%)"
+            format="%.2f",
+            help="Probability of rabies in biting dogs as percentage (default 1%)"
+        )
+        
+        Probability_of_human_developing_rabies_pct = st.number_input(
+            "Probability of Human Developing Rabies (%)",
+            min_value=1.0,
+            max_value=100.0,
+            value=17.0,
+            step=1.0,
+            format="%.1f",
+            help="Probability of human developing rabies as percentage (default 17%)"
         )
         
         Dog_Human_transmission_rate = st.number_input(
@@ -749,7 +749,7 @@ def create_parameter_inputs(model_parameters):
         st.caption(f"K = Nd × (1 + 1/ln(Population)) × {dog_density_adjustment_factor}")
         
         st.markdown("**🔗 Transmission Verification**")
-        calculated_transmission_rate = Annual_dog_bite_risk * Probability_of_rabies_in_biting_dogs * Probability_of_human_developing_rabies
+        calculated_transmission_rate = (Annual_dog_bite_risk_pct/100) * (Probability_of_rabies_in_biting_dogs_pct/100) * (Probability_of_human_developing_rabies_pct/100)
         st.metric("Active Transmission Rate", f"{calculated_transmission_rate:.8f}")
         st.metric("Manual Transmission Rate", f"{Dog_Human_transmission_rate:.8f}")
         st.success("✅ Using calculated transmission rate in simulations")
@@ -824,9 +824,9 @@ def create_parameter_inputs(model_parameters):
         'Dog_life_expectancy': Dog_life_expectancy,
         
         # Disease transmission constants
-        'Annual_dog_bite_risk': Annual_dog_bite_risk,
-        'Probability_of_rabies_in_biting_dogs': Probability_of_rabies_in_biting_dogs,
-        'Probability_of_human_developing_rabies': Probability_of_human_developing_rabies,
+        'Annual_dog_bite_risk': Annual_dog_bite_risk_pct / 100,
+        'Probability_of_rabies_in_biting_dogs': Probability_of_rabies_in_biting_dogs_pct / 100,
+        'Probability_of_human_developing_rabies': Probability_of_human_developing_rabies_pct / 100,
         'Dog_Human_transmission_rate': Dog_Human_transmission_rate,
         
         # Economic parameters
