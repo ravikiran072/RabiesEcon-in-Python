@@ -1429,10 +1429,10 @@ def create_visualization_plots(no_annual_summary, annual_summary):
     fig = make_subplots(
         rows=2, cols=2,
         subplot_titles=[
-            "🐕 Annual Rabid Dogs",
-            "📈 Cumulative Canine Cases", 
-            "💔 Annual Human Deaths",
-            "📊 Cumulative Human Deaths"
+            "Annual Rabid Dogs",
+            "Cumulative Canine Cases", 
+            "Annual Human Deaths",
+            "Cumulative Human Deaths"
         ],
         vertical_spacing=0.12,
         horizontal_spacing=0.10
@@ -1444,25 +1444,25 @@ def create_visualization_plots(no_annual_summary, annual_summary):
             'row': 1, 'col': 1,
             'data_col': 'Canine_rabies_annual',
             'yaxis_title': 'Cases per Year',
-            'icon': '🐕'
+            'icon': ''
         },
         {
             'row': 1, 'col': 2,
             'data_col': 'Canine_rabies_cumulative', 
             'yaxis_title': 'Total Cases',
-            'icon': '📈'
+            'icon': ''
         },
         {
             'row': 2, 'col': 1,
             'data_col': 'Human_rabies_annual',
             'yaxis_title': 'Deaths per Year',
-            'icon': '💔'
+            'icon': ''
         },
         {
             'row': 2, 'col': 2,
             'data_col': 'Human_rabies_cumulative',
             'yaxis_title': 'Total Deaths', 
-            'icon': '📊'
+            'icon': ''
         }
     ]
     
@@ -1524,7 +1524,7 @@ def create_visualization_plots(no_annual_summary, annual_summary):
         font=dict(
             family="Inter, -apple-system, BlinkMacSystemFont, sans-serif",
             size=12,
-            color="#2D3748"
+            color="black"
         ),
         plot_bgcolor='white',
         paper_bgcolor='white',
@@ -1537,7 +1537,7 @@ def create_visualization_plots(no_annual_summary, annual_summary):
             bgcolor="rgba(255,255,255,0.8)",
             bordercolor="#E2E8F0",
             borderwidth=1,
-            font=dict(size=12)
+            font=dict(size=12, color="black")
         ),
         margin=dict(t=80, b=100, l=60, r=60)
     )
@@ -1546,6 +1546,8 @@ def create_visualization_plots(no_annual_summary, annual_summary):
     for i in range(1, 5):
         fig.update_xaxes(
             title_text="Year",
+            title_font=dict(color="black"),
+            tickfont=dict(color="black"),
             gridcolor="#E2E8F0", 
             gridwidth=1,
             showline=True,
@@ -1558,6 +1560,8 @@ def create_visualization_plots(no_annual_summary, annual_summary):
         
         fig.update_yaxes(
             title_text=plots_config[i-1]['yaxis_title'],
+            title_font=dict(color="black"),
+            tickfont=dict(color="black"),
             gridcolor="#E2E8F0",
             gridwidth=1, 
             showline=True,
@@ -1570,7 +1574,7 @@ def create_visualization_plots(no_annual_summary, annual_summary):
     # Update subplot titles with better styling
     for i, annotation in enumerate(fig['layout']['annotations']):
         fig['layout']['annotations'][i].update(
-            font=dict(size=14, color="#2D3748", family="Inter, sans-serif"),
+            font=dict(size=14, color="black", family="Inter, sans-serif"),
             bordercolor="#E2E8F0",
             borderwidth=1,
             bgcolor="rgba(255,255,255,0.8)",
@@ -1745,7 +1749,7 @@ def create_mortality_rate_plots(no_annual_summary, annual_summary):
         font=dict(
             family="Inter, -apple-system, BlinkMacSystemFont, sans-serif",
             size=12,
-            color="#2D3748"
+            color="black"
         ),
         plot_bgcolor='white',
         paper_bgcolor='white',
@@ -1758,7 +1762,7 @@ def create_mortality_rate_plots(no_annual_summary, annual_summary):
             bgcolor="rgba(255,255,255,0.8)",
             bordercolor="#E2E8F0",
             borderwidth=1,
-            font=dict(size=12)
+            font=dict(size=12, color="black")
         ),
         margin=dict(t=80, b=100, l=60, r=60)
     )
@@ -1766,6 +1770,8 @@ def create_mortality_rate_plots(no_annual_summary, annual_summary):
     # Update axes styling
     fig.update_xaxes(
         title_text="Year",
+        title_font=dict(color="black"),
+        tickfont=dict(color="black"),
         gridcolor="#E2E8F0",
         gridwidth=1,
         showline=True,
@@ -1776,6 +1782,8 @@ def create_mortality_rate_plots(no_annual_summary, annual_summary):
     
     fig.update_yaxes(
         title_text="Dog Deaths (%)",
+        title_font=dict(color="black"),
+        tickfont=dict(color="black"),
         gridcolor="#E2E8F0",
         gridwidth=1,
         showline=True,
@@ -1786,6 +1794,8 @@ def create_mortality_rate_plots(no_annual_summary, annual_summary):
     
     fig.update_yaxes(
         title_text="Deaths per 100,000",
+        title_font=dict(color="black"),
+        tickfont=dict(color="black"),
         gridcolor="#E2E8F0",
         gridwidth=1,
         showline=True,
@@ -1797,7 +1807,7 @@ def create_mortality_rate_plots(no_annual_summary, annual_summary):
     # Update subplot titles with better styling
     for i, annotation in enumerate(fig['layout']['annotations']):
         fig['layout']['annotations'][i].update(
-            font=dict(size=14, color="#2D3748", family="Inter, sans-serif"),
+            font=dict(size=14, color="black", family="Inter, sans-serif"),
             bordercolor="#E2E8F0",
             borderwidth=1,
             bgcolor="rgba(255,255,255,0.8)",
