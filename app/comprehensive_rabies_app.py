@@ -26,16 +26,16 @@ st.markdown("""
         padding-top: 2rem;
     }
     .stMetric {
-        background-color: #1e3a8a;
+        background-color: #4f6bcc;
         color: white;
-        border: 1px solid #3b82f6;
+        border: 1px solid #6b7db8;
         padding: 1rem;
         border-radius: 0.5rem;
         margin: 0.5rem 0;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     .stMetric label {
-        color: #e0e7ff !important;
+        color: #f0f4ff !important;
         font-weight: 600;
     }
     .stMetric [data-testid="metric-container"] > div {
