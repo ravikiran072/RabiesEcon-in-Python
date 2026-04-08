@@ -408,6 +408,12 @@ def create_parameter_inputs(model_parameters):
                 "population": 15150000,
                 "hdr": 15.0,
                 "adjustment": 1.05
+            },
+            "Bengaluru": {
+                "area": 172.0,
+                "population": 8443675,
+                "hdr": 30.0,
+                "adjustment": 1.05
             }
         }
         
@@ -744,11 +750,12 @@ def create_parameter_inputs(model_parameters):
         
         st.markdown("**🔗 Transmission Verification**")
         calculated_transmission_rate = Annual_dog_bite_risk * Probability_of_rabies_in_biting_dogs * Probability_of_human_developing_rabies
-        st.metric("Calculated Transmission Rate", f"{calculated_transmission_rate:.8f}")
+        st.metric("Active Transmission Rate", f"{calculated_transmission_rate:.8f}")
         st.metric("Manual Transmission Rate", f"{Dog_Human_transmission_rate:.8f}")
+        st.success("✅ Using calculated transmission rate in simulations")
         
         if abs(calculated_transmission_rate - Dog_Human_transmission_rate) > 0.000001:
-            st.warning("⚠️ Manual transmission rate differs from calculated value!")
+            st.info("ℹ️ Simulation uses calculated rate, not manual input")
     
     # Parameter validation section
     st.sidebar.markdown("---")
@@ -854,6 +861,11 @@ def run_initial_simulation(params):
     Human_life_expectancy = params['Human_life_expectancy']
     dog_density_adjustment_factor = params['dog_density_adjustment_factor']  # NEW: Extract Dog Density Adjustment Factor
     
+    # Extract dynamic disease transmission parameters
+    Annual_dog_bite_risk = params['Annual_dog_bite_risk']
+    Probability_of_rabies_in_biting_dogs = params['Probability_of_rabies_in_biting_dogs']
+    Probability_of_human_developing_rabies = params['Probability_of_human_developing_rabies']
+    
     # Calculate derived parameters
     Humans_per_km2 = Human_population / Km2_of_program_area
     
@@ -889,7 +901,8 @@ def run_initial_simulation(params):
     m_h = (1 / Human_life_expectancy) / 52
     v_h = 0.93
     alpha_h = 0
-    beta_dh = 0.0000510
+    # Calculate beta_dh from component parameters (more accurate than manual input)
+    beta_dh = Annual_dog_bite_risk * Probability_of_rabies_in_biting_dogs * Probability_of_human_developing_rabies
     P10 = 0.50
     mu_h = (1 / 10) * 7
     gamma_d = (b_d - m_d) / K
@@ -957,6 +970,11 @@ def run_scenario_simulation(initial_run, params, coverage_data, scenario_type="n
     Free_roaming_dog_population = params['Free_roaming_dog_population']
     dog_density_adjustment_factor = params['dog_density_adjustment_factor']  # NEW: Extract Dog Density Adjustment Factor
     
+    # Extract dynamic disease transmission parameters
+    Annual_dog_bite_risk = params['Annual_dog_bite_risk']
+    Probability_of_rabies_in_biting_dogs = params['Probability_of_rabies_in_biting_dogs']
+    Probability_of_human_developing_rabies = params['Probability_of_human_developing_rabies']
+    
     Humans_per_km2 = Human_population / Km2_of_program_area
     
     # Human parameters
@@ -994,13 +1012,15 @@ def run_scenario_simulation(initial_run, params, coverage_data, scenario_type="n
     m_h = (1 / Human_life_expectancy) / 52
     v_h = 0.93
     alpha_h = 0
-    beta_dh = 0.0000510
+    # Calculate beta_dh from component parameters (more accurate than manual input)
+    beta_dh = Annual_dog_bite_risk * Probability_of_rabies_in_biting_dogs * Probability_of_human_developing_rabies
     mu_h = (1 / 10) * 7
     gamma_d = (b_d - m_d) / K
     
-    # Missing parameters
-    p_ExptoNoInf = 0.097
-    p_ExptoInf = 0.025
+    # Calculate exposure probabilities from UI parameters
+    # p_ExptoInf is based on the probability of developing rabies without PEP
+    p_ExptoInf = Probability_of_human_developing_rabies * 0.15  # Reduced factor for exposed individuals
+    p_ExptoNoInf = 0.097  # Recovery probability (keep as constant for now)
     
     # Initialize results
     results = {
@@ -1932,3 +1952,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+    
+    
+    
