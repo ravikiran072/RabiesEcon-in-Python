@@ -19,7 +19,7 @@ streamlit run app/comprehensive_rabies_app.py
 
 ## Features
 
-### **🎯 Model Parameters**
+### **Model Parameters**
 - **Geographic & Population Variables**: Program area, human/dog populations
 - **Dog Density Adjustment Factor**: Control carrying capacity (0.95, 1.0, 1.05)
 - **Economic Parameters**: Vaccination costs, PEP costs, YLL values
