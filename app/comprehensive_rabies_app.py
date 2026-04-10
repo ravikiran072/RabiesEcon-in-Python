@@ -1899,7 +1899,7 @@ def main():
         
         with tab1:
             st.header("Overall Summary")
-            st.markdown("###Impact Analysis by Vaccination Program Phase")
+            st.subheader("Impact Analysis by Vaccination Program Phase")
             
             # Create phase-based summary
             phases = [
