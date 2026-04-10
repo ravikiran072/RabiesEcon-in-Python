@@ -2015,7 +2015,7 @@ def main():
             
             # Overall program summary
             st.markdown("---")
-            st.subheader("🎯 Overall Program Impact (30 Years)")
+            st.subheader("🎯 Overall Program Impact (10 Years)")
             
             # Final year comparison
             final_year = len(no_annual_summary) - 1
@@ -2029,7 +2029,7 @@ def main():
                 st.metric(
                     "Total Deaths Averted", 
                     f"{total_deaths_averted:,.0f}", 
-                    f"{total_deaths_averted:,.0f} lives saved over 30 years"
+                    f"{total_deaths_averted:,.0f} lives saved over 10 years"
                 )
             
             with col2:
@@ -2042,7 +2042,7 @@ def main():
                 st.metric(
                     "Total Additional Investment", 
                     f"${total_cost_diff:,.0f}", 
-                    "Total program cost over 30 years"
+                    "Total program cost over 10 years"
                 )
             
             with col3:
@@ -2050,7 +2050,7 @@ def main():
                 st.metric(
                     "Overall Cost-Effectiveness", 
                     f"${overall_cost_per_death:,.0f}", 
-                    "Per death averted (30-year program)"
+                    "Per death averted (10-year program)"
                 )
             
             # Add visualization plots to Executive Summary
