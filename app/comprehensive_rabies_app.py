@@ -492,7 +492,7 @@ def create_parameter_inputs(model_parameters):
             )
         
         # DOG DENSITY ADJUSTMENT FACTOR - separate section
-        st.markdown("**🎯 Model Adjustment Parameters**")
+        st.markdown("**Model Adjustment Parameters**")
         
         # Use preset or manual for adjustment factor
         if selected_country == "Custom (Manual Entry)":
@@ -1835,7 +1835,7 @@ def main():
     
     # Add parameter summary in sidebar
     st.sidebar.markdown("---")
-    st.sidebar.subheader("📊 Current Parameters")
+    st.sidebar.subheader("Current Parameters")
     st.sidebar.metric("Program Area (km²)", f"{params['Km2_of_program_area']:,.0f}")
     st.sidebar.metric("Human Population", f"{params['Human_population']:,.0f}")
     st.sidebar.metric("Humans per Free-Roaming Dog (HDR)", f"{params['Humans_per_free_roaming_dog']:.1f}")
@@ -1845,7 +1845,7 @@ def main():
     
     # Run analysis button
     st.sidebar.markdown("---")
-    if st.sidebar.button("🚀 Run Analysis", type="primary"):
+    if st.sidebar.button("Run Analysis", type="primary"):
         
         # Validate critical parameters
         if params['Km2_of_program_area'] <= 0:
@@ -1895,11 +1895,11 @@ def main():
         st.success("🎉 Analysis completed successfully!")
         
         # Create tabs for different views
-        tab1, tab2, tab3 = st.tabs(["📈 Executive Summary", "📊 Program Summary", "📈 Visualizations"])
+        tab1, tab2, tab3 = st.tabs(["📈 Overall Summary", "📊 Program Summary", "📈 Visualizations"])
         
         with tab1:
-            st.header("Executive Summary")
-            st.markdown("### 📊 Impact Analysis by Vaccination Program Phase")
+            st.header("Overall Summary")
+            st.markdown("###Impact Analysis by Vaccination Program Phase")
             
             # Create phase-based summary
             phases = [
@@ -1984,28 +1984,28 @@ def main():
                         
                         if i == 0:  # Phase I
                             st.info("""
-                            🎯 **Phase I Focus**: Initial mass vaccination establishes baseline immunity
+                            **Phase I Focus**: Initial mass vaccination establishes baseline immunity
                             - Foundation period for building dog population immunity
                             - Higher costs as program infrastructure is established
                             - Early impact on reducing rabies transmission
                             """)
                         elif i == 1:  # Phase II
                             st.warning("""
-                            ⚡ **Phase II Focus**: Intensified efforts to reach elimination targets
+                            **Phase II Focus**: Intensified efforts to reach elimination targets
                             - Critical period for achieving high vaccination coverage
                             - Significant reduction in human rabies cases begins
                             - Cost-effectiveness improves as coverage increases
                             """)
                         elif i == 2:  # Phase III
                             st.success("""
-                            🏆 **Phase III Focus**: High coverage maintenance and elimination approach
+                            **Phase III Focus**: High coverage maintenance and elimination approach
                             - Optimal period for rabies elimination in dog populations
                             - Maximum public health impact achieved
                             - Best cost-effectiveness ratios typically seen
                             """)
                         else:  # Phase IV
                             st.info("""
-                            🛡️ **Phase IV Focus**: Post-elimination maintenance and surveillance
+                            **Phase IV Focus**: Post-elimination maintenance and surveillance
                             - Sustained low-level vaccination to prevent reintroduction
                             - Minimal human cases, focus on maintaining elimination
                             - Long-term cost savings from reduced PEP needs
@@ -2015,7 +2015,7 @@ def main():
             
             # Overall program summary
             st.markdown("---")
-            st.subheader("🎯 Overall Program Impact (10 Years)")
+            st.subheader("Overall Program Impact (10 Years)")
             
             # Final year comparison
             final_year = len(no_annual_summary) - 1
@@ -2053,13 +2053,13 @@ def main():
                     "Per death averted (10-year program)"
                 )
             
-            # Add visualization plots to Executive Summary
-            st.subheader("📈 Impact Visualization")
+            # Add visualization plots to Overall Summary
+            st.subheader("Impact Visualization")
             st.markdown("Visual comparison of rabies outcomes with and without vaccination programs over 30 years:")
             
             # Create and display the interactive visualization plots
             fig = create_visualization_plots(no_annual_summary, annual_summary)
-            st.plotly_chart(fig, use_container_width=True, key="executive_summary_charts")
+            st.plotly_chart(fig, use_container_width=True, key="overall_summary_charts")
             
             # Add interpretation text below the plots
             st.markdown("""
