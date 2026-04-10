@@ -79,7 +79,7 @@ def load_data():
 def create_coverage_data_editor(coverage_data):
     """Create interactive coverage data editor with phased approach"""
     st.sidebar.markdown("---")
-    st.sidebar.subheader("📋 Coverage Data Configuration")
+    st.sidebar.subheader("Coverage Data Configuration")
     
     # Option to use default data or create custom
     use_custom_data = st.sidebar.checkbox("Use Custom Coverage Data", value=False)
@@ -165,11 +165,11 @@ def create_coverage_data_editor(coverage_data):
         
         # Show preview of generated data
         st.sidebar.markdown("---")
-        if st.sidebar.button("📊 Preview Coverage Data"):
+        if st.sidebar.button("Preview Coverage Data"):
             custom_df = pd.DataFrame(custom_coverage_data)
             
             # Create preview in main area
-            st.header("📊 Coverage Data Preview")
+            st.header("Coverage Data Preview")
             
             # Phase information
             st.info("""
@@ -237,7 +237,7 @@ def create_coverage_data_editor(coverage_data):
             st.pyplot(fig)
             
             # Show data table with phase indicators
-            st.subheader("📋 Generated Coverage Data by Phase")
+            st.subheader("Generated Coverage Data by Phase")
             
             # Add phase column for better visualization
             display_df = custom_df.copy()
@@ -371,10 +371,10 @@ def extract_model_parameters(model_parameters):
 
 def create_parameter_inputs(model_parameters):
     """Create interactive parameter inputs in the sidebar based on parameter categories"""
-    st.sidebar.header("🎛️ Model Parameters")
+    st.sidebar.header("Model Parameters")
     
     # Create tabs for different parameter categories
-    param_tab1, param_tab2, param_tab3 = st.sidebar.tabs(["📊 Variables", "⚙️ Constants", "🔢 Calculated"])
+    param_tab1, param_tab2, param_tab3 = st.sidebar.tabs(["Variables", "Constants", "Calculated"])
     
     with param_tab1:
         st.subheader("Key Variables")
