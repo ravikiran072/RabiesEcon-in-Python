@@ -384,7 +384,7 @@ def create_parameter_inputs(model_parameters):
         defaults = extract_model_parameters(model_parameters)
         
         # VARIABLE PARAMETERS (from sheet: variable type)
-        st.markdown("**📍 Geographic & Population Variables**")
+        st.markdown("**Geographic & Population Variables**")
         
         # Add country preset dropdown
         country_presets = {
@@ -722,7 +722,7 @@ def create_parameter_inputs(model_parameters):
     
     with param_tab3:
         st.subheader("Calculated Values")
-        st.info("📊 These values are automatically calculated from your input parameters")
+        st.info("These values are automatically calculated from your input parameters")
         
         # CALCULATED PARAMETERS (derived from inputs)
         
@@ -1818,21 +1818,24 @@ def create_mortality_rate_plots(no_annual_summary, annual_summary):
 
 # Main Streamlit App
 def main():
-    st.title("🐕 Rabies Economic Analysis Model")
+    st.title("Rabies Economic Analysis Model")
     st.markdown("### Comprehensive Economic Impact Assessment of Rabies Vaccination Programs")
-    
+
     # Load data
     with st.spinner("Loading model data..."):
         coverage_data, model_parameters = load_data()
-    
-    st.success("✅ Data loaded successfully")
-    
-    # Create interactive parameter inputs FIRST (so they appear at top of sidebar)
+
+    # --- Run Analysis button at TOP of sidebar ---
+    st.sidebar.markdown("### Run Analysis")
+    run_clicked = st.sidebar.button("Run Analysis", type="primary", use_container_width=True)
+    st.sidebar.markdown("---")
+
+    # Create interactive parameter inputs
     params = create_parameter_inputs(model_parameters)
-    
-    # Create coverage data editor (this will modify coverage_data if custom data is used)
+
+    # Create coverage data editor
     coverage_data = create_coverage_data_editor(coverage_data)
-    
+
     # Add parameter summary in sidebar
     st.sidebar.markdown("---")
     st.sidebar.subheader("Current Parameters")
@@ -1842,10 +1845,9 @@ def main():
     st.sidebar.metric("Dog Population", f"{params['Free_roaming_dog_population']:,.0f}")
     st.sidebar.metric("Dogs per km²", f"{params['Free_roaming_dogs_per_km2']:,.1f}")
     st.sidebar.metric("R₀ (Dog-to-Dog)", f"{params['R0_dog_to_dog']:.3f}")
-    
-    # Run analysis button
-    st.sidebar.markdown("---")
-    if st.sidebar.button("Run Analysis", type="primary"):
+
+    # Run simulation when button clicked and store results in session state
+    if run_clicked:
         
         # Validate critical parameters
         if params['Km2_of_program_area'] <= 0:
@@ -1890,14 +1892,52 @@ def main():
         status_text.text("Analysis complete!")
         progress_bar.empty()
         status_text.empty()
+
+        # Store results in session state so they persist across interactions
+        st.session_state['no_annual_summary'] = no_annual_summary
+        st.session_state['annual_summary'] = annual_summary
+        st.session_state['coverage_data_stored'] = coverage_data
+        st.session_state['params_stored'] = params
+
+    # --- Landing page if no results yet ---
+    if 'no_annual_summary' not in st.session_state:
+        st.markdown("---")
+        st.subheader("Welcome")
+        st.markdown("""
+        This tool models the economic impact of dog rabies vaccination programs compared to a status quo (no annual vaccination) scenario.
+
+        **What the model does:**
+        - Simulates rabies transmission in dog and human populations using a compartmental (SEIR) model
+        - Compares two scenarios: no annual vaccination vs. an annual vaccination program
+        - Calculates deaths averted, program costs, cost per death averted, and cost per DALY averted
+
+        **Inputs required (set in the sidebar):**
+        - Program area and population size
+        - Dog population and density parameters
+        - Vaccination coverage and PEP (post-exposure prophylaxis) rates
+        - Costs: vaccination per dog, PEP per person, suspect exposure investigation
+
+        **How to interpret results:**
+        - **Deaths averted**: Human rabies deaths prevented by the vaccination program
+        - **Additional investment**: Extra cost of vaccination program vs. status quo
+        - **Cost per death averted**: Total additional cost divided by deaths averted — lower is better
+        - **Cost per DALY averted**: Accounts for years of life lost — compare to WHO threshold (~1x GDP per capita)
+
+        **To get started:** Adjust parameters in the sidebar if needed, then click **Run Analysis**.
+        """)
+        st.info("Configure your parameters in the sidebar and click 'Run Analysis' to begin.")
+        return
+
+    # --- Display results from session state ---
+    st.success("Analysis complete — results shown below.")
+    no_annual_summary = st.session_state['no_annual_summary']
+    annual_summary = st.session_state['annual_summary']
+    coverage_data = st.session_state['coverage_data_stored']
+    params = st.session_state['params_stored']
+
+    tab1, tab2, tab3 = st.tabs(["Overall Summary", "Program Summary", "Visualizations"])
         
-        # Display results
-        st.success("🎉 Analysis completed successfully!")
-        
-        # Create tabs for different views
-        tab1, tab2, tab3 = st.tabs(["📈 Overall Summary", "📊 Program Summary", "📈 Visualizations"])
-        
-        with tab1:
+    with tab1:
             st.header("Overall Summary")
             st.subheader("Impact Analysis by Vaccination Program Phase")
             
@@ -2070,7 +2110,7 @@ def main():
             - **Green lines**: Annual vaccination program (intervention)
             """)
         
-        with tab2:
+    with tab2:
             st.header("Program Summary Table")
             
             # Create program summary
@@ -2189,7 +2229,7 @@ def main():
                 use_container_width=True
             )
         
-        with tab3:
+    with tab3:
             st.header("Impact Visualizations")
             
             # Create and display interactive plots
