@@ -4,10 +4,10 @@
 
 A comprehensive economic impact assessment tool for rabies vaccination programs using epidemiological modeling and cost-benefit analysis.
 
-## 🚀 Quick Start
+## Quick Start
 
 ### **Live Demo**
-👉 **[Try the App](https://rabiesecon.streamlit.app)** 
+**[Try the App](https://rabiesecon.streamlit.app)** 
 
 ### **Local Installation**
 ```bash
@@ -17,7 +17,7 @@ pip install -r requirements.txt
 streamlit run app/comprehensive_rabies_app.py
 ```
 
-## 📊 Features
+## Features
 
 ### **🎯 Model Parameters**
 - **Geographic & Population Variables**: Program area, human/dog populations
@@ -25,7 +25,7 @@ streamlit run app/comprehensive_rabies_app.py
 - **Economic Parameters**: Vaccination costs, PEP costs, YLL values
 - **Real-time Validation**: Parameter consistency checks
 
-### **📋 Coverage Data Configuration**
+### **Coverage Data Configuration**
 - **Phased Vaccination Programs**:
   - Phase I (Years 1-3): Initial mass vaccination
   - Phase II (Years 4-6): Intensified efforts  
@@ -34,13 +34,13 @@ streamlit run app/comprehensive_rabies_app.py
 - **Custom Scenarios**: Interactive coverage rate configuration
 - **Visual Preview**: Real-time charts and data tables
 
-### **📈 Analysis Outputs**
+### **Analysis Outputs**
 - **Executive Summary**: Key metrics and ROI analysis
 - **Program Comparison**: No vaccination vs. annual vaccination
 - **Detailed Results**: Year-by-year breakdowns
 - **Interactive Visualizations**: Population dynamics, costs, benefits
 
-## 🛠️ Technical Details
+## Technical Details
 
 ### **Core Files**
 - `app/comprehensive_rabies_app.py` - Main Streamlit application
@@ -59,7 +59,7 @@ streamlit run app/comprehensive_rabies_app.py
 - Streamlit, NumPy, Pandas, Matplotlib, Seaborn
 - See `requirements.txt` for complete list
 
-## 📚 Model Background
+## Model Background
 
 This model implements a compartmental epidemiological framework for rabies transmission in dog populations, coupled with economic analysis of vaccination interventions. The model considers:
 
@@ -68,14 +68,14 @@ This model implements a compartmental epidemiological framework for rabies trans
 - **Economic Costs**: Vaccination programs, PEP treatment, productivity losses
 - **Policy Scenarios**: Comparison of intervention strategies
 
-## 🎯 Use Cases
+## Use Cases
 
 - **Public Health Planning**: Design rabies elimination programs
 - **Economic Evaluation**: Cost-effectiveness of vaccination strategies  
 - **Policy Analysis**: Compare intervention scenarios
 - **Research Applications**: Epidemiological modeling studies
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 ├── app/                           # Main application
@@ -96,15 +96,15 @@ This model implements a compartmental epidemiological framework for rabies trans
 
 ```
 
-## 🤝 Contributing
+## Contributing
 
 This model is designed for epidemiological research and public health applications. For questions or contributions, please open an issue or submit a pull request.
 
-## 📄 License
+## License
 
 This project is available for academic and public health use. Please cite appropriately in any publications or applications.
 
-## 🔗 Links
+## Links
 
 - **Live Application**: [rabiesecon.streamlit.app](https://rabiesecon.streamlit.app)
 - **Documentation**: See `README_DEPLOYMENT.md` for deployment details
